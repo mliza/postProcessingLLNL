@@ -28,7 +28,6 @@ import pickle
 import numpy as np 
 import matplotlib.pyplot as plt 
 import matplotlib.gridspec as gridspec
-import statsmodels.api as sm 
 from scipy import integrate
 from scipy.fft import fft 
 from scipy.special import legendre 

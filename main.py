@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.9 
+#!/opt/homebrew/bin/python3.9
 import numpy as np 
 import pickle 
 import os 
@@ -10,23 +10,23 @@ import seaborn as sb
 # My files 
 import baseAnalysis
 import probe 
-#import line 
-import new_line as line 
+import line 
 
-line_flag  = False    
-probe_flag = False  
-new_data_flag = False  
-scatter_probe_flag = False   
+# Configuration Parameters 
+line_flag             = False    
+probe_flag            = False  
+new_data_flag         = False  
+scatter_probe_flag    = False   
 probe_sampling_rate   = 1 
-sub_sampling_flag = False
+sub_sampling_flag     = False
 probe_correlation_lag = 100 
 line_sampling_rate    = [1,1] 
 line_correlation_lag  = 40 
-time_sub_sampling    = 1 
-spatial_sub_sampling = 1 
+time_sub_sampling     = 500 
+spatial_sub_sampling  = 100 
 
 # Paths 
-pickle_path = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
+pickle_path   = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
 save_path     = '/Users/martin/Desktop/workingFiles/results' 
 probe_save    = os.path.join(save_path, 'probe', 'total')
 boxcar_save   = os.path.join(save_path, 'probe', 'boxcar')
@@ -39,7 +39,6 @@ base  = baseAnalysis.Base_Analysis(pickle_path)
 probe = probe.Probe(pickle_path, sampling_rate=probe_sampling_rate) 
 line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate) 
 
-
 # Keys 
 probe_keys = list(probe.location.keys()) 
 line_keys  = list(line.location.keys()) 
@@ -47,54 +46,18 @@ variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL',
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO','DIL', 'P-DIL'] 
 
 # Line Pre-Processing loop, returns the mean_cutoff for each  
-dict_pre_process = { } 
-mean_cutoff_k    = { }
-testing_len = np.shape(line.working_data['l0']['U-X'])[0] 
-testing_vec = np.arange(0, testing_len, 1000)  
-
-# Time series 
-time_correlation = { }
-time_scales      = { }
-time_spe         = { }
-time_mean_cutoff = { }    
+temporal_dict = { }
+spatial_dict  = { }
 for i in line_keys: 
-    pre_process_dict  = line.pre_process(i, n_points=spatial_sub_sampling ) 
-    radius_x          = pre_process_dict['time_radius_x'] 
-    fluctuation       = pre_process_dict['reynolds_decomposition'] 
-    variable          = pre_process_dict['velocity_x'] 
-    chosen_positions  = pre_process_dict['chosen_positions']
+    temp_dict = line.temporal_data(i, n_points=spatial_sub_sampling, 
+                                auto_correlation_len=line_correlation_lag) 
+    spat_dict = line.spatial_data(i, n_points=time_sub_sampling, 
+                                auto_correlation_len=line_correlation_lag) 
+    temporal_dict[i] = temp_dict 
+    spatial_dict[i]  = spat_dict 
 
-    # Mean cutoff_scale 
-    cutoff_scale     = [ ] 
-    time_correlation[i] = { }
-    time_scales[i]      = { }
-    time_spe[i]         = { }
-    time_mean_cutoff[i] = { }
 
-    # Create temporary dictionaries 
-    temp_correlation = { }
-    temp_scales      = { }
-    temp_spe         = { }
-
-    for j in range(np.shape(radius_x)[0]): 
-
-        auto_correlation = line.auto_correlation(radius_x[j], 
-                        fluctuation[j], auto_correlation_len=line_correlation_lag) 
-        spe = line.filter_decay(variable[:,j])  
-        length_scales = line.length_scales(auto_correlation['correlation_radius'], 
-                                   auto_correlation['correlation'], 
-                                   fluctuation[j], spe) 
-        # Appending to dictionaries 
-        temp_correlation[j] = auto_correlation
-        temp_scales[j]      = length_scales 
-        temp_spe[j]         = spe 
-    time_spe_temp, time_scales_temp, time_correlation_temp = line.mean_calculator(temp_correlation, 
-            temp_scales, temp_spe)
-
-    # Create dictionaries for plotting 
-    time_correlation[i] = time_correlation_temp  
-    time_scales[i]      = time_scales_temp  
-    time_spe[i]         = time_spe_temp 
+IPython.embed(colors='Linux') 
 
 # Spatial series 
 spatial_correlation = { }

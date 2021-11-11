@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.9
+#!/opt/homebrew/bin/python3.9
 '''
     Date:   10/26/2021
     Author: Martin E. Liza
