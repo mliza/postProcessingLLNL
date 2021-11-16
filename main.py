@@ -14,15 +14,14 @@ import line
 
 # Configuration Parameters 
 line_flag             = False    
-probe_flag            = False  
+probe_flag            = True  
 new_data_flag         = False  
-scatter_probe_flag    = False   
+scatter_probe_flag    = True  
 probe_sampling_rate   = 1 
 sub_sampling_flag     = False
 probe_correlation_lag = 100 
-line_sampling_rate    = [1,1] 
 line_correlation_lag  = 40 
-time_sub_sampling     = 500 
+time_sub_sampling     = 500
 spatial_sub_sampling  = 100 
 
 # Paths 
@@ -45,7 +44,7 @@ line_keys  = list(line.location.keys())
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL', 'VORTMAG', 'P-DIL', 'RHO-DIL'] 
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO','DIL', 'P-DIL'] 
 
-# Line Pre-Processing loop, returns the mean_cutoff for each  
+# Line and crunched data  
 temporal_dict = { }
 spatial_dict  = { }
 for i in line_keys: 
@@ -53,115 +52,19 @@ for i in line_keys:
                                 auto_correlation_len=line_correlation_lag) 
     spat_dict = line.spatial_data(i, n_points=time_sub_sampling, 
                                 auto_correlation_len=line_correlation_lag) 
-    temporal_dict[i] = temp_dict 
-    spatial_dict[i]  = spat_dict 
-
-
+    temporal_dict[i] = line.data_cruncher(temp_dict) 
+    spatial_dict[i]  = line.data_cruncher(spat_dict) 
+# Calculate Scales 
+    line.plot_correlation_spe( temporal_dict[i], 
+                           spatial_dict[i], dataset=i, 
+                           variable='U-X',
+                           time_sub_sampling=time_sub_sampling,
+                           spatial_sub_sampling=spatial_sub_sampling,
+                           saving_path = line_save) 
 IPython.embed(colors='Linux') 
-
-# Spatial series 
-spatial_correlation = { }
-spatial_scales      = { }
-spatial_spe         = { }
-variable = 'U-X'
-for i in line_keys: 
-    velocity_x       = line.working_data[i][variable] 
-    spatial_location = line.location[i]  
-    [time_rows, spatial_columns] = np.shape(velocity_x) 
-    # Sub sample on time rows 
-    chosen_times  = np.arange(0, time_rows, time_sub_sampling) 
-    temp_radius_z = np.linspace(spatial_location[2], 
-                                   spatial_location[5],
-                                   spatial_columns) 
-    radius_z      = temp_radius_z - np.min(temp_radius_z)  
-    fluctuation   = line.reynolds_decomposition(velocity_x) 
-    # Dictionaries for populating 
-    spatial_correlation[i] = { }
-    spatial_scales[i]      = { } 
-    spatial_spe[i]         = { } 
-    for j in chosen_times: 
-        auto_correlation_temp = line.auto_correlation(radius_z, 
-                        fluctuation[j], auto_correlation_len=line_correlation_lag) 
-        spe_temp      = line.filter_decay(velocity_x[j])  
-        length_scales_temp = line.length_scales(
-                auto_correlation_temp['correlation_radius'], 
-                auto_correlation_temp['correlation'], 
-                fluctuation[j], spe_temp)  
-
-        # Appending to dictionaries 
-        temp_correlation[j] = auto_correlation_temp 
-        temp_scales[j]      = length_scales_temp  
-        temp_spe[j]         = spe_temp  
-    spatial_spe_temp, spatial_scales_temp, spatial_correlation_temp = line.mean_calculator(temp_correlation, 
-            temp_scales, temp_spe)
-
-        # Appending to dictionaries 
-    spatial_correlation[i] = spatial_correlation_temp 
-    spatial_scales[i]      = spatial_scales_temp  
-    spatial_spe[i]         = spatial_spe_temp  
-
         
-# Ploting Spectrum and correlation 
-for i in line_keys:  
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2) 
-    fig.set_size_inches(15,8) 
-    fig.suptitle(f'{i}, {variable}, time sampling={time_sub_sampling}, spatial sampling={spatial_sub_sampling}') 
-    # Load all data 
-    spatial_taylor_m   = spatial_scales[i]['taylor_m'] 
-    spatial_integral_m = spatial_scales[i]['integral_m'] 
-    spatial_integral_k = spatial_scales[i]['integral_k'] 
-    spatial_taylor_k   = spatial_scales[i]['taylor_k'] 
-    spatial_corr_rad   = spatial_correlation[i]['correlation_radius'] 
-    spatial_corr       = spatial_correlation[i]['correlation'] 
-    time_taylor_m   = time_scales[i]['taylor_m'] 
-    time_integral_m = time_scales[i]['integral_m'] 
-    time_integral_k = time_scales[i]['integral_k'] 
-    time_taylor_k   = time_scales[i]['taylor_k'] 
-    time_corr_rad   = time_correlation[i]['correlation_radius'] 
-    time_corr       = time_correlation[i]['correlation'] 
 
-     # Plotting Spatial Correlation 
-    ax1.plot(spatial_corr_rad, spatial_corr, linewidth='2', color='k', 
-            label=f'L={spatial_integral_m}, $\lambda$={spatial_taylor_m}')
-    ax1.set_ylabel('Correlation, spatial series')
-    ax1.grid('-.')
-    ax1.legend(handlelength=0, handletextpad=0, fancybox=True) 
-    ax1.set_xlim(left=0.0) 
-
-     # Plotting Spatial Energy Spectrum
-    ax2.loglog(spatial_spe[i], linewidth='3', color='k') 
-    ax2.axvline(x=float(spatial_integral_k), color='r', linestyle='--', linewidth='2', 
-            label=f'$L_k$={spatial_integral_k}') 
-    ax2.axvline(x=float(spatial_taylor_k), color='b', linestyle='--', linewidth='2', 
-            label=f'$\lambda_k$={spatial_taylor_k}') 
-            
-    ax2.set_ylabel('Energy Spectrum, spatial series')
-    ax2.grid('-.')
-    ax2.set_xlim(left=0.9) 
-    ax2.legend() 
-
-    # Plotting Time Correlation  
-    ax3.plot(time_corr_rad, time_corr, linewidth='3', color='k',
-            label=f'L={time_integral_m}, $\lambda$={time_taylor_m}')
-    ax3.set_ylabel('Correlation, time series')
-    ax3.grid('-.')
-    ax3.legend(handlelength=0, handletextpad=0, fancybox=True) 
-    ax3.set_xlim(left=0.0) 
-
-     # Plotting time Energy Spectrum
-    ax4.loglog(time_spe[i], linewidth='3', color='k') 
-    ax4.axvline(x=float(time_integral_k), color='r', linestyle='--', linewidth='2', 
-            label=f'$L_k$={time_integral_k}') 
-    ax4.axvline(x=float(time_taylor_k), color='b', linestyle='--', linewidth='2', 
-            label=f'$\lambda_k$={time_taylor_k}') 
-    ax4.set_ylabel('Energy Spectrum, time series')
-    ax4.grid('-.')
-    ax4.set_xlim(left=0.9) 
-    ax4.legend() 
-    plt.savefig(os.path.join(line_save, 'correlation', f'{i}_{variable}.png')) 
-    plt.close() 
-IPython.embed(colors='Linux') 
-
+'''
 return_dict = { }
 for i in line_keys: 
     radius_z      = line.x_axis(i) 
@@ -193,7 +96,6 @@ for i in line_keys:
         IPython.embed(colors='Linux') 
 
 
-'''
 boxcar_dict   = { } 
 full_dict     = { }
 filtered_dict = { }
@@ -288,7 +190,7 @@ for i in line_keys:
         plt.close() 
 '''
 # Add new data to structures if this is on 
-if (new_data_flag == True):
+if (new_data_flag is True):
 # Add new data probe  
     for i in probe_keys: 
         pressure     = probe.working_data[i]['P'] 
@@ -308,7 +210,7 @@ if (new_data_flag == True):
         line.add_new_variable(i,'RHO-DIL', rho_dil, 
                 pickle_path, 'new_line_data') 
 
-if (probe_flag == True):
+if (probe_flag is True):
     for i in probe_keys:
         print(i) 
     # Plot Scatter 

@@ -55,6 +55,7 @@ class Probe(Base_Analysis):
         mean      = np.mean(velocity_x) 
         delta_x   = np.abs(mean * (time_axis[2] - time_axis[1]))
         x_axis    = np.linspace(0, (delta_x * vel_x_len), vel_x_len)
+        x_axis    = (time_axis * velocity_x) - (time_axis[0] * velocity_x[0])
         return x_axis
 
 # String Title 

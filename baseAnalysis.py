@@ -102,6 +102,10 @@ class Base_Analysis:
     # Calculates the Taylor microscale
         nd_derivative  = (2*correlation[0] - 5*correlation[1]  
                             + 4*correlation[2] - correlation[3]) / delta_x**2
+        if (nd_derivative > 0):
+            nd_derivative = (correlation[0] - 2*correlation[1] + 
+                            correlation[2]) / delta_x**2
+
         taylor_scale   = 1 / np.sqrt(-0.5 * nd_derivative) 
     # Calculates the Integral Scales
         # sometimes the length is negative because of the data 
@@ -120,11 +124,11 @@ class Base_Analysis:
         k_delta    = (taylor_k + integral_k) / 2
 
     # Returns a dictionary 
-        scales_dict = { 'taylor_m'   : "{:.3e}".format(taylor_scale),
-                        'integral_m' : "{:.3e}".format(integral_scale), 
-                        'integral_k' : "{:.3e}".format(integral_k), 
-                        'cutoff_k'   :  k_delta,  
-                        'taylor_k'   : "{:.3e}".format(taylor_k) }
+        scales_dict = { 'taylor_m'   : f'{taylor_scale:.3e}',
+                        'integral_m' : f'{integral_scale:.3e}', 
+                        'integral_k' : f'{integral_k:.3e}', 
+                        'cutoff_k'   : k_delta,  
+                        'taylor_k'   : f'{taylor_k:3e}' }
         return scales_dict 
 
 # Calculates filter decay 
@@ -204,10 +208,10 @@ class Base_Analysis:
         kurtosis = ( (mu4 - 4 * mu3 * mu1 + 6 * mu2 * mu1**2 - 
                     3* mu1**4) / variance**2 )
         # Returns a dictionary  
-        raw_moments = { 'mean'    : "{:.3e}".format(mean), 
-                        'std_dev' : "{:.3e}".format(np.sqrt(variance)),
-                        'skewness': "{:.3e}".format(skewness), 
-                        'kurtosis': "{:.3e}".format(kurtosis) }
+        raw_moments = { 'mean'    : f'{mean:.3e}',
+                        'std_dev' : f'{np.sqrt(variance):.3e}',
+                        'skewness': f'{skewness:.3e}', 
+                        'kurtosis': f'{kurtosis:.3e}' }
         return raw_moments  
 
 # Boxcar filter (Moving average filter, Finite Impulse Response filter)  
@@ -293,10 +297,9 @@ class Base_Analysis:
         # Create moment strings 
         nl = '\n'
         full_str    = f'{moment_labels[0]} = {full_mom_val[0]}{nl}{moment_labels[1]} = {full_mom_val[1]}{nl}{moment_labels[2]} = {full_mom_val[2]}{nl}{moment_labels[3]} = {full_mom_val[3]}' 
-        resolved_str     = f'{moment_labels[0]} = {resolved_mom_val[0]}{nl}{moment_labels[1]} = {resolved_mom_val[1]}{nl}{moment_labels[2]} = {resolved_mom_val[2]}{nl}{moment_labels[3]} = {resolved_mom_val[3]}' 
-        sgs_str     = f'{moment_labels[0]} = {sgs_mom_val[0]}{nl}{moment_labels[1]} = {sgs_mom_val[1]}{nl}{moment_labels[2]} = {sgs_mom_val[2]}{nl}{moment_labels[3]} = {sgs_mom_val[3]}' 
-        moment_str  =  { 'full_str'      : full_str,  
+        resolved_str = f'{moment_labels[0]} = {resolved_mom_val[0]}{nl}{moment_labels[1]} = {resolved_mom_val[1]}{nl}{moment_labels[2]} = {resolved_mom_val[2]}{nl}{moment_labels[3]} = {resolved_mom_val[3]}' 
+        sgs_str      = f'{moment_labels[0]} = {sgs_mom_val[0]}{nl}{moment_labels[1]} = {sgs_mom_val[1]}{nl}{moment_labels[2]} = {sgs_mom_val[2]}{nl}{moment_labels[3]} = {sgs_mom_val[3]}' 
+        moment_str   =  {'full_str'      : full_str,  
                          'resolved_str'  : resolved_str, 
                          'sgs_str'       : sgs_str }
         return moment_str
-
