@@ -26,8 +26,9 @@ import os
 import sys 
 import pickle
 import numpy as np 
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import seaborn as sb 
 from scipy import integrate
 from scipy.fft import fft 
 from scipy.special import legendre 
@@ -303,3 +304,134 @@ class Base_Analysis:
                          'resolved_str'  : resolved_str, 
                          'sgs_str'       : sgs_str }
         return moment_str
+
+# Plot Legendre filter  
+    def plot_legendre(self, dataset_number, dataset_variable, 
+            boxcar_dictionary, legendre_dictionary, saving_path=None): 
+    # Loading data  
+        les_variable      = boxcar_dictionary['les_variable'] 
+        les_radius        = boxcar_dictionary['les_radius']
+        filtered_radius   = boxcar_dictionary['full_radius'] 
+        filtered_variable = boxcar_dictionary['filtered_variable'] 
+        window_size       = boxcar_dictionary['window_size']
+        legendre_variable = legendre_dictionary['delta_variable']
+        legendre_radius   = legendre_dictionary['delta_radius'] 
+        iterations        = self.working_data[dataset_number]['ITER'] 
+    # Title 
+        title_str = self.plot_title(dataset_number, dataset_variable) 
+    # Generate plots 
+        fig, axs = plt.subplots(3, figsize=(15,7)) 
+        fig.suptitle(f'{title_str}, window_size={window_size}', fontsize=16)
+        # Plot 1st figure 
+        axs[0].plot(filtered_radius, filtered_variable, label='filtered variable',
+                linewidth=3, color='k') 
+        axs[1].plot(les_radius, les_variable, 'o-', markerfacecolor='lightgray',
+                    drawstyle='steps-mid', markersize=6, linewidth='3', 
+                    color='k', label='boxcar sampling')
+        axs[2].plot(legendre_radius, legendre_variable, 'o-', 
+                    markerfacecolor='lightgray', 
+                    drawstyle='steps-mid', markersize=6, linewidth='3', 
+                    color='k', label='legendre')
+        axs[0].grid('-.')
+        axs[0].margins(x=0) 
+        axs[0].set_ylabel(f'{dataset_variable}, filtered')
+        axs[0].legend() 
+        # Plot 1nd figure 
+        axs[1].grid('-.')
+        axs[1].margins(x=0) 
+        axs[1].set_ylabel(f'{dataset_variable}, les')
+        axs[1].legend() 
+        # Plot 2nd figure 
+        axs[2].grid('-.')
+        axs[2].margins(x=0) 
+        axs[2].set_xlabel('Radius [m]')
+        axs[2].set_ylabel(f'{dataset_variable}, delta')
+        axs[2].legend() 
+    #  Save results  
+        if (saving_path == None):
+            plt.show() 
+        else:
+            plt.savefig(os.path.join(saving_path,
+            f'legendre_{dataset_number}_{dataset_variable}.png'))
+            plt.close() 
+
+# Plot boxcar filter  
+    def plot_boxcar(self, dataset_number, dataset_variable,
+            boxcar_dictionary, moments_str_dict, saving_path=None): 
+    # Loading data 
+        resolved_eddies = boxcar_dictionary['filtered_variable'] 
+        sgs_eddies      = boxcar_dictionary['sgs_variable']
+        full_radius     = boxcar_dictionary['full_radius'] 
+        full_variable   = boxcar_dictionary['full_variable']
+        window_size     = boxcar_dictionary['window_size']
+    # Plotting 
+        fig = plt.figure() 
+        plt.gcf().set_size_inches(17,8) 
+        fig.tight_layout()  
+        gs  = gridspec.GridSpec(3, 2, width_ratios=[5,2])
+        ax_0 = plt.subplot(gs[0]) 
+        ax_1 = plt.subplot(gs[1]) 
+        ax_2 = plt.subplot(gs[2]) 
+        ax_3 = plt.subplot(gs[3]) 
+        ax_4 = plt.subplot(gs[4]) 
+        ax_5 = plt.subplot(gs[5]) 
+    # Figure title 
+        title_str    = self.plot_title(dataset_number, dataset_variable) 
+        fig.suptitle(f'{title_str}, window size = {window_size}', fontsize=16)
+    # Create moment strings 
+        full_str     = moments_str_dict['full_str'] 
+        resolved_str = moments_str_dict['resolved_str'] 
+        sgs_str      = moments_str_dict['sgs_str'] 
+    # ax_0
+        ax_0.plot(full_radius, full_variable, color='k', linewidth='3')
+        ax_0.set_ylabel(f'{dataset_variable}, full')
+        ax_0.grid('-.')
+        ax_0.margins(x=0) 
+    # Ax 1
+        ax_1.hist(full_variable, label=full_str,  bins=50, density=True, 
+                  color='lightcyan', edgecolor='k')
+        sb.kdeplot(full_variable, bw_adjust=1.3, fill=False, 
+                    linewidth=2, color='crimson', ax=ax_1) 
+        ax_1.legend(bbox_to_anchor=(0.72,0.55), loc='lower left', 
+                facecolor='white', framealpha=1,
+                handlelength=0, handletextpad=0, fancybox=True) 
+        ax_1.set_ylabel('Probability') 
+    # Ax 2
+        ax_2.plot(full_radius, resolved_eddies, color='k', linewidth='3')
+        ax_2.set_ylabel(f'{dataset_variable}, filtered')
+        ax_2.grid('-.')
+        ax_2.margins(x=0) 
+    # Ax 3
+        ax_3.hist(resolved_eddies, label=resolved_str, bins=50, density=True, 
+                  color='lightcyan', edgecolor='k')
+        sb.kdeplot(resolved_eddies, bw_adjust=1.3, fill=False, 
+                    linewidth=2, color='crimson', ax=ax_3) 
+        ax_3.legend(bbox_to_anchor=(0.72,0.55), loc='lower left', 
+                facecolor='white', framealpha=1,
+                handlelength=0, handletextpad=0, fancybox=True) 
+        ax_3.set_ylabel('Probability') 
+    # Ax 4
+        ax_4.plot(full_radius, sgs_eddies, color='k', linewidth='3')
+        ax_4.set_ylabel(f'{dataset_variable}, sgs')
+        ax_4.set_xlabel(f'Radius [m]')
+        ax_4.grid('-.')
+        ax_4.margins(x=0) 
+    # Ax 5
+        ax_5.hist(sgs_eddies, label=sgs_str,  bins=50, density=True, 
+                  color='lightcyan', edgecolor='k')
+        sb.kdeplot(sgs_eddies, bw_adjust=1.3, fill=False, 
+                    linewidth=2, color='crimson', ax=ax_5) 
+        ax_5.legend(bbox_to_anchor=(0.72,0.55), loc='lower left', 
+                facecolor='white', framealpha=1,
+                handlelength=0, handletextpad=0, fancybox=True) 
+        ax_5.set_ylabel('Probability') 
+        ax_5.set_xlabel(f'{dataset_variable}') 
+        #fig.supxlabel('Radius [m]') 
+        if (saving_path == None):
+            plt.show() 
+        else:
+            plt.savefig(os.path.join(saving_path,
+            f'boxcar_{dataset_number}_{dataset_variable}.png'))
+            plt.close() 
+
+

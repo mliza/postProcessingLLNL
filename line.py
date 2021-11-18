@@ -27,11 +27,13 @@ class Line(Base_Analysis):
     flag_points = 'line_points' 
 
 # Temporal Data 
-    def temporal_data(self, dataset_number, n_points, auto_correlation_len=50): 
+    def temporal_data(self, dataset_number, 
+            dataset_variable, n_points, auto_correlation_len=50): 
+        data_var   = self.working_data[dataset_number][dataset_variable].T
         time_axis  = self.working_data[dataset_number]['TIME'] 
-        var_in     = self.working_data[dataset_number]['U-X']
-        [time_rows, spatial_columns] = np.shape(var_in) 
-        velocity_x = var_in.T
+        vel_x      = self.working_data[dataset_number]['U-X']
+        [time_rows, spatial_columns] = np.shape(vel_x) 
+        velocity_x = vel_x.T
         # Make n_points times series 
         spatial_sampling  = np.arange(0, spatial_columns, n_points) 
         # Create fictitious time series data  
@@ -42,13 +44,13 @@ class Line(Base_Analysis):
             time_pos_temp = mean_velocity * time_axis 
             # Starts the time position at 0 
             position      = time_pos_temp - np.min(time_pos_temp)  
-            fluctuation   = velocity_x[i] - mean_velocity
+            fluctuation   = data_var[i] - np.mean(data_var[i]) 
             correlation   = self.auto_correlation(position, fluctuation, 
                             auto_correlation_len)
-            spe           = self.filter_decay(velocity_x[i]) 
+            spe           = self.filter_decay(data_var[i]) 
             # Return Dictionary  
-            return_dict[i]['radius']        = position 
-            return_dict[i]['variable']      = velocity_x[i] 
+            return_dict[i]['radius']        = np.asarray(position) 
+            return_dict[i]['variable']      = data_var[i] 
             return_dict[i]['fluctuation']   = fluctuation 
             return_dict[i]['correlation']   = correlation
             return_dict[i]['spe']           = spe
@@ -56,24 +58,23 @@ class Line(Base_Analysis):
         return return_dict  
 
 # Spatial Data 
-    def spatial_data(self, dataset_number, n_points, auto_correlation_len=50): 
-        time_axis  = self.working_data[dataset_number]['TIME'] 
-        velocity_x = self.working_data[dataset_number]['U-X'] 
-        [time_rows, spatial_columns] = np.shape(velocity_x) 
+    def spatial_data(self, dataset_number,
+            dataset_variable, n_points, auto_correlation_len=50): 
+        data_var   = self.working_data[dataset_number][dataset_variable]
+        [time_rows, spatial_columns] = np.shape(data_var) 
         radius_z = self.x_axis(dataset_number)  
         # Make n_points times series 
         temporal_sampling  = np.arange(0, time_rows, n_points) 
         return_dict = { }
         for i in temporal_sampling:  
             return_dict[i] = { }
-            mean_velocity = np.mean(velocity_x[i])  
-            fluctuation   = velocity_x[i] - mean_velocity
+            fluctuation   = data_var[i] - np.mean(data_var[i])
             correlation   = self.auto_correlation(radius_z, fluctuation, 
                             auto_correlation_len)
-            spe           = self.filter_decay(velocity_x[i]) 
+            spe           = self.filter_decay(data_var[i]) 
             # Return Dictionary  
-            return_dict[i]['radius']        = radius_z  
-            return_dict[i]['variable']      = velocity_x[i] 
+            return_dict[i]['radius']        = np.array(radius_z)  
+            return_dict[i]['variable']      = data_var[i] 
             return_dict[i]['fluctuation']   = fluctuation 
             return_dict[i]['correlation']   = correlation
             return_dict[i]['spe']           = spe
@@ -120,8 +121,8 @@ class Line(Base_Analysis):
             correlation_radius.append(np.mean(corr_rad_temp))  
             correlation.append(np.mean(corr_temp)) 
         # Create dictionary 
-        corr_temp_dict = { 'correlation_radius' : correlation_radius,
-                           'correlation'        : correlation }
+        corr_temp_dict = { 'correlation_radius' : np.asarray(correlation_radius),
+                           'correlation'        : np.asarray(correlation) }
         # Spe 
         spe_return = [ ]
         for i in range(len(dict_in[0]['spe'])):
@@ -136,11 +137,11 @@ class Line(Base_Analysis):
                                                fluctuation, spe_return) 
 
     # Create Return Dictionary 
-        return_crunched_dat = { 'radius'        : radius, 
-                                'variable'      : variable,
-                                'fluctuation'   : fluctuation, 
+        return_crunched_dat = { 'radius'        : np.asarray(radius), 
+                                'variable'      : np.asarray(variable),
+                                'fluctuation'   : np.asarray(fluctuation), 
                                 'correlation'   : corr_temp_dict, 
-                                'spe'           : spe_return,  
+                                'spe'           : np.asarray(spe_return),  
                                 'length_scales' : length_scales }
         return return_crunched_dat  
 
@@ -166,8 +167,8 @@ class Line(Base_Analysis):
         return x_axis 
 
 # Plot correlation + spe (temporal)  
-    def plot_correlation_spe(self, temporal_dict, spatial_dict, dataset,
-            time_sub_sampling, spatial_sub_sampling, variable='U-X',  saving_path=None): 
+    def plot_correlation_spe(self, temporal_dict, spatial_dict, dataset, variable,
+            time_sub_sampling, spatial_sub_sampling, saving_path=None): 
         # Load data for easy plotting 
         # Spatial Data 
         spatial_taylor_m   = spatial_dict['length_scales']['taylor_m'] 
@@ -236,3 +237,7 @@ class Line(Base_Analysis):
         else: 
             plt.savefig(os.path.join(saving_path, f'{dataset}_{variable}.png')) 
             plt.close() 
+
+# Plot boxcart filter 
+    #def plot_boxcart(self ):
+
