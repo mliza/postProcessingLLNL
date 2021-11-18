@@ -14,15 +14,15 @@ import line
 
 # Configuration Parameters 
 line_flag             = True 
-probe_flag            = False  
-new_data_flag         = False  
+probe_flag            = True  
+new_data_flag         = True  
 scatter_probe_flag    = True
 sub_sampling_flag     = False
 probe_sampling_rate   = 1 
-probe_correlation_lag = 100 
-line_correlation_lag  = 40 
-time_sub_sampling     = 500
-spatial_sub_sampling  = 100 
+probe_correlation_lag = 50 
+line_correlation_lag  = 50 
+time_sub_sampling     = 1
+spatial_sub_sampling  = 1 
 
 # Paths 
 pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
@@ -40,7 +40,6 @@ spatial_line_legendre  = os.path.join(line_legendre, 'spatial')
 temporal_line_boxcar   = os.path.join(line_boxcar, 'temporal') 
 spatial_line_boxcar    = os.path.join(line_boxcar, 'spatial') 
 
-
 # Loading class's instances  
 base  = baseAnalysis.Base_Analysis(pickle_path)
 probe = probe.Probe(pickle_path, sampling_rate=probe_sampling_rate) 
@@ -50,7 +49,7 @@ line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate)
 probe_keys = list(probe.location.keys()) 
 line_keys  = list(line.location.keys()) 
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL', 'VORTMAG', 'P-DIL', 'RHO-DIL'] 
-variables  = ['U-X', 'U-Z' ] 
+variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P_DIL']  
 
 # Add new data to structures if this is on 
 if (new_data_flag is True):
@@ -174,6 +173,7 @@ if (line_flag == True):
         temporal_dict[i] = { }
         spatial_dict[i]  = { }  
         for j in variables:
+            print(i, j)  
             temp_dict = line.temporal_data(i,j, n_points=spatial_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
@@ -201,7 +201,7 @@ if (line_flag == True):
             # Plots 
             line.plot_boxcar(i,j, spatial_boxcar, spatial_moments_str, 
                         saving_path=spatial_line_boxcar) 
-            probe.plot_legendre(i, j, spatial_boxcar, spatial_legendre,
+            line.plot_legendre(i, j, spatial_boxcar, spatial_legendre,
                                 saving_path=spatial_line_legendre) 
 
             # Temporal 
@@ -218,5 +218,5 @@ if (line_flag == True):
             # Plots 
             line.plot_boxcar(i,j, temporal_boxcar, temporal_moments_str, 
                         saving_path=temporal_line_boxcar) 
-            probe.plot_legendre(i, j, temporal_boxcar, temporal_legendre,
+            line.plot_legendre(i, j, temporal_boxcar, temporal_legendre,
                                 saving_path=temporal_line_legendre) 

@@ -238,6 +238,12 @@ class Line(Base_Analysis):
             plt.savefig(os.path.join(saving_path, f'{dataset}_{variable}.png')) 
             plt.close() 
 
-# Plot boxcart filter 
-    #def plot_boxcart(self ):
+# String Title 
+    def plot_title(self, dataset_number, dataset_variable):
+    # Probe Locations  
+        loc        = self.location[dataset_number] 
+        location   = f'x_1=[{loc[0]}, {loc[3]}], x_2=[{loc[1]}, {loc[4]}], x_3=[{loc[2]}, {loc[5]}]'
+        var_string = f'{dataset_number}, {dataset_variable}'  
+        title_str  = f'{var_string} at {location}'
+        return title_str 
 

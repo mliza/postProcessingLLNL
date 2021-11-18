@@ -316,7 +316,6 @@ class Base_Analysis:
         window_size       = boxcar_dictionary['window_size']
         legendre_variable = legendre_dictionary['delta_variable']
         legendre_radius   = legendre_dictionary['delta_radius'] 
-        iterations        = self.working_data[dataset_number]['ITER'] 
     # Title 
         title_str = self.plot_title(dataset_number, dataset_variable) 
     # Generate plots 
