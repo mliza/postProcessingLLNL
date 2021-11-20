@@ -209,7 +209,7 @@ class Line(Base_Analysis):
                 linewidth='2', label=f'$L_k$={spatial_integral_k}') 
         ax2.axvline(x=float(spatial_taylor_k), color='b', linestyle='--', 
                 linewidth='2', label=f'$\lambda_k$={spatial_taylor_k}') 
-        ax2.set_ylabel('Energy Spectrum, spatial series')
+        ax2.set_ylabel('Energy Spectrum, temporal series')
         ax2.grid('-.')
         ax2.set_xlim(left=0.9) 
         ax2.legend() 
@@ -217,7 +217,8 @@ class Line(Base_Analysis):
         # Plotting Time Correlation  
         ax3.plot(temporal_corr_rad, temporal_corr, linewidth='3', color='k',
             label=f'L={temporal_integral_m}, $\lambda$={temporal_taylor_m}')
-        ax3.set_ylabel('Correlation, time series')
+        ax3.set_ylabel('Correlation, temporal series')
+        ax3.set_xlabel('Radius [m]')
         ax3.grid('-.')
         ax3.legend(handlelength=0, handletextpad=0, fancybox=True) 
         ax3.set_xlim(left=0.0) 
@@ -229,6 +230,7 @@ class Line(Base_Analysis):
         ax4.axvline(x=float(temporal_taylor_k), color='b', linestyle='--', 
                 linewidth='2', label=f'$\lambda_k$={temporal_taylor_k}') 
         ax4.set_ylabel('Energy Spectrum, time series')
+        ax4.set_xlabel('k-vector [1/m]')
         ax4.grid('-.')
         ax4.set_xlim(left=0.9) 
         ax4.legend() 

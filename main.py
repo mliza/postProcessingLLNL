@@ -21,7 +21,7 @@ sub_sampling_flag     = False
 probe_sampling_rate   = 1 
 probe_correlation_lag = 50 
 line_correlation_lag  = 50 
-time_sub_sampling     = 1
+time_sub_sampling     = 1 
 spatial_sub_sampling  = 1 
 
 # Paths 
@@ -49,7 +49,7 @@ line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate)
 probe_keys = list(probe.location.keys()) 
 line_keys  = list(line.location.keys()) 
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL', 'VORTMAG', 'P-DIL', 'RHO-DIL'] 
-variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P_DIL']  
+variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P-DIL']  
 
 # Add new data to structures if this is on 
 if (new_data_flag is True):
@@ -173,7 +173,6 @@ if (line_flag == True):
         temporal_dict[i] = { }
         spatial_dict[i]  = { }  
         for j in variables:
-            print(i, j)  
             temp_dict = line.temporal_data(i,j, n_points=spatial_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
@@ -187,6 +186,7 @@ if (line_flag == True):
                                spatial_sub_sampling=spatial_sub_sampling,
                                saving_path = line_correlation_save) 
     # Testing scales 
+        print(i, j)  
         for j in variables:
             # Spatial 
             spatial_cutoff_k = spatial_dict[i]['U-Z']['length_scales']['cutoff_k']
