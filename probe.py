@@ -101,7 +101,6 @@ class Probe(Base_Analysis):
         iteration   = self.working_data[dataset_number]['ITER']
         dist_k      = range(len(spe))  
         sampling_points = iteration[1] - iteration[0] 
-
     # Split Plots  
         fig1 = plt.figure(2, figsize=(18,8), dpi=95) 
         gs  = gridspec.GridSpec(ncols=3, nrows=2) 
@@ -113,10 +112,19 @@ class Probe(Base_Analysis):
     # Figure title 
         title_str = self.plot_title(dataset_number, dataset_variable) 
         fig1.suptitle(f'{title_str}', fontsize=16) 
+    # Intersection point
+        taylor_rad  = np.linspace(float(taylor_m), 0) 
+        shift_b     = np.linspace(1, float(taylor_m)) 
+        parabola    = -(taylor_rad + shift_b)**2 + 1 
+        max_indx    = np.where(parabola < correlation[-1])[0][-1] # index with the last negative value 
+        taylor_rad  = taylor_rad[max_indx:] 
+        parabola    = parabola[max_indx:]
     # Plotting Correlation 
         ax1.plot(corr_radius, correlation, 'o-', 
                 markerfacecolor='lightgray', 
                  linewidth='3', color='k') 
+        ax1.plot(taylor_rad, parabola, '--', linewidth='3', color='b') 
+
         if (dataset_variable == 'U-X'): 
             ax1.text(corr_radius[-1], 1, 
                     f'$L_{{11}}$= {integral_m}\n$\lambda_{{f}}$= {taylor_m}', 

@@ -297,9 +297,14 @@ class Base_Analysis:
 
         # Create moment strings 
         nl = '\n'
-        full_str    = f'{moment_labels[0]} = {full_mom_val[0]}{nl}{moment_labels[1]} = {full_mom_val[1]}{nl}{moment_labels[2]} = {full_mom_val[2]}{nl}{moment_labels[3]} = {full_mom_val[3]}' 
+        '''
+        full_str     = f'{moment_labels[0]} = {full_mom_val[0]}{nl}{moment_labels[1]} = {full_mom_val[1]}{nl}{moment_labels[2]} = {full_mom_val[2]}{nl}{moment_labels[3]} = {full_mom_val[3]}' 
         resolved_str = f'{moment_labels[0]} = {resolved_mom_val[0]}{nl}{moment_labels[1]} = {resolved_mom_val[1]}{nl}{moment_labels[2]} = {resolved_mom_val[2]}{nl}{moment_labels[3]} = {resolved_mom_val[3]}' 
         sgs_str      = f'{moment_labels[0]} = {sgs_mom_val[0]}{nl}{moment_labels[1]} = {sgs_mom_val[1]}{nl}{moment_labels[2]} = {sgs_mom_val[2]}{nl}{moment_labels[3]} = {sgs_mom_val[3]}' 
+        '''
+        full_str     = f'{moment_labels[0]} = {full_mom_val[0]}{nl}{moment_labels[1]} = {full_mom_val[1]}{nl}{moment_labels[2]} = {full_mom_val[2]}' 
+        resolved_str = f'{moment_labels[0]} = {resolved_mom_val[0]}{nl}{moment_labels[1]} = {resolved_mom_val[1]}{nl}{moment_labels[2]} = {resolved_mom_val[2]}' 
+        sgs_str      = f'{moment_labels[0]} = {sgs_mom_val[0]}{nl}{moment_labels[1]} = {sgs_mom_val[1]}{nl}{moment_labels[2]} = {sgs_mom_val[2]}' 
         moment_str   =  {'full_str'      : full_str,  
                          'resolved_str'  : resolved_str, 
                          'sgs_str'       : sgs_str }

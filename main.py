@@ -13,16 +13,16 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = True 
-probe_flag            = True  
-new_data_flag         = True  
-scatter_probe_flag    = True
+line_flag             = False  
+probe_flag            = True    
+new_data_flag         = False   
+scatter_probe_flag    = False 
 sub_sampling_flag     = False
 probe_sampling_rate   = 1 
-probe_correlation_lag = 50 
+probe_correlation_lag = 40
 line_correlation_lag  = 50 
-time_sub_sampling     = 1 
-spatial_sub_sampling  = 1 
+time_sub_sampling     = 100
+spatial_sub_sampling  = 200 
 
 # Paths 
 pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
@@ -30,11 +30,11 @@ save_path      = '/Users/martin/Desktop/workingFiles/results'
 probe_save     = os.path.join(save_path, 'probe', 'total')
 probe_boxcar   = os.path.join(save_path, 'probe', 'boxcar')
 probe_scatter  = os.path.join(save_path, 'probe', 'scatter')
-probe_legendre = os.path.join(save_path,'probe', 'legendre') 
+probe_legendre = os.path.join(save_path, 'probe', 'legendre') 
 line_save      = os.path.join(save_path, 'line')
 line_correlation_save = os.path.join(line_save, 'correlation') 
 line_boxcar    = os.path.join(save_path, 'line', 'boxcar')
-line_legendre  = os.path.join(save_path,'line', 'legendre') 
+line_legendre  = os.path.join(save_path, 'line', 'legendre') 
 temporal_line_legendre = os.path.join(line_legendre, 'temporal') 
 spatial_line_legendre  = os.path.join(line_legendre, 'spatial') 
 temporal_line_boxcar   = os.path.join(line_boxcar, 'temporal') 
@@ -134,7 +134,6 @@ if (probe_flag is True):
             variable_moments     = probe.raw_stat_moments(variable)
             legendre_dict        = probe.legendre_interpolation(boxcar_dict) 
             moments_str          = probe.statistical_moments_str(boxcar_dict) 
-            
 
             # Shifting Factors 
             if (j == 'RHO'):
@@ -215,7 +214,7 @@ if (line_flag == True):
             temporal_dict[i][j]['legendre']    = temporal_legendre
             temporal_dict[i][j]['moments_str'] = temporal_moments_str
 
-            # Plots 
+        # Plots 
             line.plot_boxcar(i,j, temporal_boxcar, temporal_moments_str, 
                         saving_path=temporal_line_boxcar) 
             line.plot_legendre(i, j, temporal_boxcar, temporal_legendre,

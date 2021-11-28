@@ -43,18 +43,30 @@ class Line(Base_Analysis):
             mean_velocity = np.mean(velocity_x[i])  
             time_pos_temp = mean_velocity * time_axis 
             # Starts the time position at 0 
-            position      = time_pos_temp - np.min(time_pos_temp)  
+            position      = np.asarray(time_pos_temp - np.min(time_pos_temp)) 
             fluctuation   = data_var[i] - np.mean(data_var[i]) 
             correlation   = self.auto_correlation(position, fluctuation, 
                             auto_correlation_len)
             spe           = self.filter_decay(data_var[i]) 
+            # Calculate length scales 
+            correlation_radius = correlation['correlation_radius']
+            correlation        = correlation['correlation']
+            length_scales = self.length_scales(correlation_radius, 
+                                               correlation, 
+                                               fluctuation, spe) 
+            boxcart       = self.boxcar_filter(position, data_var[i],
+                                            length_scales['cutoff_k'])
+            legendre      = self.legendre_interpolation(boxcart) 
+                                                
             # Return Dictionary  
-            return_dict[i]['radius']        = np.asarray(position) 
+            return_dict[i]['radius']        = position 
             return_dict[i]['variable']      = data_var[i] 
             return_dict[i]['fluctuation']   = fluctuation 
             return_dict[i]['correlation']   = correlation
             return_dict[i]['spe']           = spe
-
+            return_dict[i]['length_scales'] = length_scales
+            return_dict[i]['boxcart']       = boxcart
+            return_dict[i]['legendre']      = legendre 
         return return_dict  
 
 # Spatial Data 
@@ -72,13 +84,24 @@ class Line(Base_Analysis):
             correlation   = self.auto_correlation(radius_z, fluctuation, 
                             auto_correlation_len)
             spe           = self.filter_decay(data_var[i]) 
+            # Process 
+            correlation_radius = correlation['correlation_radius']
+            correlation        = correlation['correlation']
+            length_scales = self.length_scales(correlation_radius, 
+                                               correlation, 
+                                               fluctuation, spe) 
+            boxcart       = self.boxcar_filter(position, data_var[i],
+                                            length_scales['cutoff_k'])
+            legendre      = self.legendre_interpolation(boxcart) 
             # Return Dictionary  
             return_dict[i]['radius']        = np.array(radius_z)  
             return_dict[i]['variable']      = data_var[i] 
             return_dict[i]['fluctuation']   = fluctuation 
             return_dict[i]['correlation']   = correlation
             return_dict[i]['spe']           = spe
-
+            return_dict[i]['length_scales'] = length_scales
+            return_dict[i]['boxcart']       = boxcart
+            return_dict[i]['legendre']      = legendre 
         return return_dict  
 
 # Calculates the mean 
@@ -209,7 +232,7 @@ class Line(Base_Analysis):
                 linewidth='2', label=f'$L_k$={spatial_integral_k}') 
         ax2.axvline(x=float(spatial_taylor_k), color='b', linestyle='--', 
                 linewidth='2', label=f'$\lambda_k$={spatial_taylor_k}') 
-        ax2.set_ylabel('Energy Spectrum, temporal series')
+        ax2.set_ylabel('Energy Spectrum, spatial series')
         ax2.grid('-.')
         ax2.set_xlim(left=0.9) 
         ax2.legend() 
@@ -229,7 +252,7 @@ class Line(Base_Analysis):
                 linewidth='2', label=f'$L_k$={temporal_integral_k}') 
         ax4.axvline(x=float(temporal_taylor_k), color='b', linestyle='--', 
                 linewidth='2', label=f'$\lambda_k$={temporal_taylor_k}') 
-        ax4.set_ylabel('Energy Spectrum, time series')
+        ax4.set_ylabel('Energy Spectrum, temporal series')
         ax4.set_xlabel('k-vector [1/m]')
         ax4.grid('-.')
         ax4.set_xlim(left=0.9) 
@@ -248,4 +271,3 @@ class Line(Base_Analysis):
         var_string = f'{dataset_number}, {dataset_variable}'  
         title_str  = f'{var_string} at {location}'
         return title_str 
-
