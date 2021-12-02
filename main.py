@@ -172,6 +172,7 @@ if (line_flag == True):
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
+            IPython.embed(colors='Linux') 
             temporal_dict[i][j] = line.data_cruncher(temp_dict) 
             spatial_dict[i][j]  = line.data_cruncher(spat_dict) 
     # Calculate Scales 

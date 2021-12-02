@@ -31,47 +31,19 @@ class Line(Base_Analysis):
             dataset_variable, n_points, auto_correlation_len=50): 
         # Loads data 
         data_var   = self.working_data[dataset_number][dataset_variable].T
-        time_axis  = self.working_data[dataset_number]['TIME'] 
         vel_x      = self.working_data[dataset_number]['U-X']
+        time_axis  = self.working_data[dataset_number]['TIME'] 
         [time_rows, spatial_columns] = np.shape(vel_x) 
-        velocity_x = vel_x.T
         # Make n_points times series 
         spatial_sampling  = np.arange(0, spatial_columns, n_points) 
         # Create fictitious time series data  
         return_dict = { }
         for i in spatial_sampling: 
-            return_dict[i] = { }
-            mean_velocity = np.mean(velocity_x[i])  
-            time_pos_temp = mean_velocity * time_axis 
-            # Starts the time position at 0 
-            position      = np.asarray(time_pos_temp - np.min(time_pos_temp)) 
-            # Calculates cutoff scale on U-X
-            velocity_fluctuation = velocity_x[i] - mean_velocity 
-            velocity_correlation = self.auto_correlation(position, velocity_fluctuation, 
-                                    auto_correlation_len)
-            velocity_spe         = self.filter_decay(velocity_x[i]) 
-            length_scales = self.length_scales(velocity_correlation['correlation_radius'], 
-                                               velocity_correlation['correlation'], 
-                                               velocity_fluctuation, velocity_spe) 
-            # Variable 
-            fluctuation   = data_var[i] - np.mean(data_var[i]) 
-            correlation   = self.auto_correlation(position, fluctuation, 
-                            auto_correlation_len)
-            spe           = self.filter_decay(data_var[i]) 
-            # Calculate length scales 
-            boxcart       = self.boxcar_filter(position, data_var[i],
-                                            length_scales['cutoff_k'])
-            legendre      = self.legendre_interpolation(boxcart) 
-                                                
-            # Return Dictionary  
-            return_dict[i]['radius']        = position 
-            return_dict[i]['variable']      = data_var[i] 
-            return_dict[i]['fluctuation']   = fluctuation 
-            return_dict[i]['correlation']   = correlation
-            return_dict[i]['spe']           = spe
-            return_dict[i]['length_scales'] = length_scales
-            return_dict[i]['boxcart']       = boxcart
-            return_dict[i]['legendre']      = legendre 
+            radius_x = time_axis * np.mean(vel_x[i]) 
+            radius_x -= np.mean(radius_x) 
+            data_out = self.data_process(data_var[i], radius_x, 
+                       auto_correlation_len)
+            return_dict[i] = data_out 
         return return_dict  
 
 # Spatial Data 
@@ -79,43 +51,16 @@ class Line(Base_Analysis):
             dataset_variable, n_points, auto_correlation_len=50): 
         # Loads data 
         data_var   = self.working_data[dataset_number][dataset_variable]
-        velocity_z = self.working_data[dataset_number]['U-Z']
         [time_rows, spatial_columns] = np.shape(data_var) 
-        radius_z = self.x_axis(dataset_number)  
+        radius_z = self.z_axis(dataset_number)  
         # Make n_points times series 
         temporal_sampling  = np.arange(0, time_rows, n_points) 
         return_dict = { }
         # Calculate absolute length scales 
         for i in temporal_sampling:  
-            # Calculates cutoff scale on U-X
-            velocity_fluctuation = velocity_z[i] - np.mean(velocity_z)
-            velocity_correlation = self.auto_correlation(radius_z, velocity_fluctuation, 
-                                    auto_correlation_len)
-            velocity_spe         = self.filter_decay(velocity_z[i]) 
-            length_scales = self.length_scales(velocity_correlation['correlation_radius'], 
-                                               velocity_correlation['correlation'], 
-                                               velocity_fluctuation, velocity_spe) 
-            # Variable 
-            return_dict[i] = { }
-            fluctuation   = data_var[i] - np.mean(data_var[i])
-            correlation   = self.auto_correlation(radius_z, fluctuation, 
-                            auto_correlation_len)
-            spe           = self.filter_decay(data_var[i]) 
-            # Process 
-            correlation_radius = correlation['correlation_radius']
-            correlation        = correlation['correlation']
-            boxcart       = self.boxcar_filter(radius_z, data_var[i],
-                                            length_scales['cutoff_k'])
-            legendre      = self.legendre_interpolation(boxcart) 
-            # Return Dictionary  
-            return_dict[i]['radius']        = np.array(radius_z)  
-            return_dict[i]['variable']      = data_var[i] 
-            return_dict[i]['fluctuation']   = fluctuation 
-            return_dict[i]['correlation']   = correlation
-            return_dict[i]['spe']           = spe
-            return_dict[i]['length_scales'] = length_scales
-            return_dict[i]['boxcart']       = boxcart
-            return_dict[i]['legendre']      = legendre 
+            data_out = self.data_process(data_var[i], radius_z, 
+                       auto_correlation_len)
+            return_dict[i] = data_out 
         return return_dict  
 
 # Calculates the mean 
@@ -185,10 +130,10 @@ class Line(Base_Analysis):
                                 'length_scales' : length_scales }
         return return_crunched_dat  
 
- # Calculates x_axis
-    def x_axis(self, dataset_number, sampling_rate=1):
+ # Calculates z_axis
+    def z_axis(self, dataset_number, sampling_rate=1):
         # Loading data 
-        variable     = self.working_data[dataset_number]['U-X'] 
+        variable     = self.working_data[dataset_number]['U-Z'] 
         sub_variable = self.sub_sampling(variable, sampling_rate) 
         # Load positions 
         # NOTE: x-axis is chosen to be x_3, if data needs to be collected 
@@ -198,13 +143,13 @@ class Line(Base_Analysis):
         x2            = [data_location[1], data_location[4]] 
         x3            = [data_location[2], data_location[5]] 
         x3_size       = np.shape(sub_variable)[1]  
-        x_axis        = np.linspace(x3[0], x3[1], x3_size) 
+        z_axis        = np.linspace(x3[0], x3[1], x3_size) 
         # Shift the axis, so it starts at 0.0 
-        if (np.min(x_axis) < 0):  
-            x_axis += np.abs(np.min(x_axis))
-        if (np.min(x_axis) > 0): 
-            x_axis -= np.min(x_axis)
-        return x_axis 
+        if (np.min(z_axis) < 0):  
+            z_axis += np.abs(np.min(z_axis))
+        if (np.min(z_axis) > 0): 
+            z_axis -= np.min(z_axis)
+        return z_axis 
 
 # Plot correlation + spe (temporal)  
     def plot_correlation_spe(self, temporal_dict, spatial_dict, dataset, variable,
