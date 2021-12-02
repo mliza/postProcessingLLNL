@@ -29,6 +29,7 @@ class Line(Base_Analysis):
 # Temporal Data 
     def temporal_data(self, dataset_number, 
             dataset_variable, n_points, auto_correlation_len=50): 
+        # Loads data 
         data_var   = self.working_data[dataset_number][dataset_variable].T
         time_axis  = self.working_data[dataset_number]['TIME'] 
         vel_x      = self.working_data[dataset_number]['U-X']
@@ -44,16 +45,20 @@ class Line(Base_Analysis):
             time_pos_temp = mean_velocity * time_axis 
             # Starts the time position at 0 
             position      = np.asarray(time_pos_temp - np.min(time_pos_temp)) 
+            # Calculates cutoff scale on U-X
+            velocity_fluctuation = velocity_x[i] - mean_velocity 
+            velocity_correlation = self.auto_correlation(position, velocity_fluctuation, 
+                                    auto_correlation_len)
+            velocity_spe         = self.filter_decay(velocity_x[i]) 
+            length_scales = self.length_scales(velocity_correlation['correlation_radius'], 
+                                               velocity_correlation['correlation'], 
+                                               velocity_fluctuation, velocity_spe) 
+            # Variable 
             fluctuation   = data_var[i] - np.mean(data_var[i]) 
             correlation   = self.auto_correlation(position, fluctuation, 
                             auto_correlation_len)
             spe           = self.filter_decay(data_var[i]) 
             # Calculate length scales 
-            correlation_radius = correlation['correlation_radius']
-            correlation        = correlation['correlation']
-            length_scales = self.length_scales(correlation_radius, 
-                                               correlation, 
-                                               fluctuation, spe) 
             boxcart       = self.boxcar_filter(position, data_var[i],
                                             length_scales['cutoff_k'])
             legendre      = self.legendre_interpolation(boxcart) 
@@ -72,13 +77,25 @@ class Line(Base_Analysis):
 # Spatial Data 
     def spatial_data(self, dataset_number,
             dataset_variable, n_points, auto_correlation_len=50): 
+        # Loads data 
         data_var   = self.working_data[dataset_number][dataset_variable]
+        velocity_z = self.working_data[dataset_number]['U-Z']
         [time_rows, spatial_columns] = np.shape(data_var) 
         radius_z = self.x_axis(dataset_number)  
         # Make n_points times series 
         temporal_sampling  = np.arange(0, time_rows, n_points) 
         return_dict = { }
+        # Calculate absolute length scales 
         for i in temporal_sampling:  
+            # Calculates cutoff scale on U-X
+            velocity_fluctuation = velocity_z[i] - np.mean(velocity_z)
+            velocity_correlation = self.auto_correlation(radius_z, velocity_fluctuation, 
+                                    auto_correlation_len)
+            velocity_spe         = self.filter_decay(velocity_z[i]) 
+            length_scales = self.length_scales(velocity_correlation['correlation_radius'], 
+                                               velocity_correlation['correlation'], 
+                                               velocity_fluctuation, velocity_spe) 
+            # Variable 
             return_dict[i] = { }
             fluctuation   = data_var[i] - np.mean(data_var[i])
             correlation   = self.auto_correlation(radius_z, fluctuation, 
@@ -87,10 +104,7 @@ class Line(Base_Analysis):
             # Process 
             correlation_radius = correlation['correlation_radius']
             correlation        = correlation['correlation']
-            length_scales = self.length_scales(correlation_radius, 
-                                               correlation, 
-                                               fluctuation, spe) 
-            boxcart       = self.boxcar_filter(position, data_var[i],
+            boxcart       = self.boxcar_filter(radius_z, data_var[i],
                                             length_scales['cutoff_k'])
             legendre      = self.legendre_interpolation(boxcart) 
             # Return Dictionary  
@@ -113,6 +127,9 @@ class Line(Base_Analysis):
                                 ['correlation'].keys())
         corr_len          = len(dict_in[sampling_location[0]]
                                 ['correlation']['correlation'])
+        boxcar_keys       = list(dict_in[sampling_location[0]]['boxcart'].keys())
+        legendre_keys     = list(dict_in[sampling_location[0]]['legendre'].keys())
+        IPython.embed(colors='Linux') 
         # Radius, Variable and fluctuation
         radius      = [ ]
         variable    = [ ]

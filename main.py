@@ -13,11 +13,11 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = False  
-probe_flag            = True    
-new_data_flag         = False   
+line_flag             = True  
+probe_flag            = False    
+new_data_flag         = False    
 scatter_probe_flag    = False 
-sub_sampling_flag     = False
+sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
 probe_correlation_lag = 40
 line_correlation_lag  = 50 
@@ -118,22 +118,18 @@ if (probe_flag is True):
         for j in variables:  
             print(i, j)  
         # General Functions 
-            variable             = probe.working_data[i][j] 
-            variable             = probe.sub_sampling(variable) 
-            variable_fluctuation = probe.reynolds_decomposition(variable) 
-            auto_correlation     = probe.auto_correlation(probe_radius,
-                                    variable_fluctuation, 
-                                    auto_correlation_len=probe_correlation_lag) 
-            pwr_spectral         = probe.filter_decay(variable) 
-            length_scales        = probe.length_scales(
-                             auto_correlation['correlation_radius'], 
-                                    auto_correlation['correlation'],  
-                                    variable_fluctuation, pwr_spectral) 
-            boxcar_dict          = probe.boxcar_filter(probe_radius, 
-                                   variable, const_cutoff_k) 
-            variable_moments     = probe.raw_stat_moments(variable)
-            legendre_dict        = probe.legendre_interpolation(boxcar_dict) 
-            moments_str          = probe.statistical_moments_str(boxcar_dict) 
+            variable         = probe.working_data[i][j] 
+            variable         = probe.sub_sampling(variable) 
+            dict_out         = probe.data_process(variable, probe_radius, 
+                               auto_correlation_len=probe_correlation_lag)
+            correlation      = dict_out['correlation']
+            pwr_spectral     = dict_out['spe']
+            length_scales    = dict_out['length_scales'] 
+
+            boxcar_dict      = probe.boxcar_filter(probe_radius, 
+                               variable, const_cutoff_k) 
+            legendre_dict    = probe.legendre_interpolation(boxcar_dict) 
+            moments_str      = probe.statistical_moments_str(boxcar_dict) 
 
             # Shifting Factors 
             if (j == 'RHO'):
@@ -159,7 +155,7 @@ if (probe_flag is True):
             probe.plot_legendre(i, j, boxcar_dict, legendre_dict,
                                 saving_path=probe_legendre) 
             probe.plot_results(i,j, probe_radius, variable, pwr_spectral,
-                    auto_correlation, length_scales, moments_str,
+                    correlation, length_scales, moments_str,
                   inertial_shifting_factor=shifting_factor,
                   saving_path=probe_save) 
 
@@ -179,6 +175,7 @@ if (line_flag == True):
             temporal_dict[i][j] = line.data_cruncher(temp_dict) 
             spatial_dict[i][j]  = line.data_cruncher(spat_dict) 
     # Calculate Scales 
+            IPython.embed(colors='Linux') 
             line.plot_correlation_spe(temporal_dict[i][j], 
                                spatial_dict[i][j], dataset=i, variable=j,
                                time_sub_sampling=time_sub_sampling,

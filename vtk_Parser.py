@@ -18,8 +18,8 @@ import IPython
 import time 
 
 # Inputs, create a region where the data will be clipped (approx values) 
-#workgingFiles_path = '/Users/martin/Desktop/workingFiles/dump_172000' # cavity 
-workgingFiles_path = '/Users/martin/Desktop/workingFiles/dump_339000' # flat plate
+#workingFiles_path = '/Users/martin/Desktop/workingFiles/dump_172000' # cavity 
+workingFiles_path = '/Users/martin/Desktop/workingFiles/dump_339000' # flat plate
 x1, x2     = 9e-3, 1.2e-2
 y1, y2     = 1e-2, 1.2e-2
 z1, z2     = 1e-3, 1.2e-3
@@ -44,6 +44,10 @@ def data_to_binary(bounds, pvtu_in, pickle_out, vtk_out):
     Y = cell_center.points[:,1] 
     Z = cell_center.points[:,2] 
     
+    sorting_index = np.argsort(X) 
+    Xs = X[sorting_index]
+    Ys = Y[sorting_index]
+    Zs = Z[sorting_index]
     IPython.embed(colors='Linux')
     ax = plt.axes(projection='3d') 
     ax.plot3D(X[0:5], Y[0:5], Z[0:5], '*-') 

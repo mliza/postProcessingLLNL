@@ -116,9 +116,13 @@ class Probe(Base_Analysis):
         taylor_rad  = np.linspace(float(taylor_m), 0) 
         shift_b     = np.linspace(1, float(taylor_m)) 
         parabola    = -(taylor_rad + shift_b)**2 + 1 
-        max_indx    = np.where(parabola < correlation[-1])[0][-1] # index with the last negative value 
-        taylor_rad  = taylor_rad[max_indx:] 
-        parabola    = parabola[max_indx:]
+        try:
+            max_indx = np.where(parabola < np.min(correlation))[0][-1] # index with the last negative value 
+        except Exception:
+            max_indx = 0
+
+        taylor_rad = taylor_rad[max_indx:] 
+        parabola   = parabola[max_indx:]
     # Plotting Correlation 
         ax1.plot(corr_radius, correlation, 'o-', 
                 markerfacecolor='lightgray', 
