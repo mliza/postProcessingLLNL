@@ -82,7 +82,6 @@ if (probe_flag is True):
         # Constant length scale (U-X)
         const_cutoff_k  = probe.const_cutoff_k(i, probe_radius, 
                 correlation_lag=probe_correlation_lag)  
-
         if (scatter_probe_flag == True):
             probe.plot_scatter(i, 'P', 'RHO', probe_radius, const_cutoff_k,  
                                correlation_lag=probe_correlation_lag,
@@ -162,7 +161,6 @@ if (probe_flag is True):
                   inertial_shifting_factor=shifting_factor,
                   saving_path=probe_save) 
 
-
 # Line and crunched data  
 temporal_dict = { }
 spatial_dict  = { }
@@ -188,6 +186,7 @@ if (line_flag == True):
         temporal_cutoff_k = line.const_cutoff_k(temporal_dict[i]['U-X']) 
         spatial_cutoff_k  = line.const_cutoff_k(spatial_dict[i]['U-Z']) 
     # Testing scales 
+        IPython.embed(colors='Linux') 
         print(i, j)  
         for j in variables:
             # Spatial 
@@ -195,7 +194,6 @@ if (line_flag == True):
             spatial_boxcar   = line.boxcar_filter(spatial_dict[i][j]['radius'], 
                                               spatial_dict[i][j]['variable'], 
                                               spatial_cutoff_k)
-            ipdb.set_trace()
             spatial_moments_str = line.statistical_moments_str(spatial_boxcar) 
             spatial_legendre    = line.legendre_interpolation(spatial_boxcar) 
             spatial_dict[i][j]['boxcar']     = spatial_boxcar
@@ -216,7 +214,6 @@ if (line_flag == True):
             temporal_dict[i][j]['boxcar']      = temporal_boxcar
             temporal_dict[i][j]['legendre']    = temporal_legendre
             temporal_dict[i][j]['moments_str'] = temporal_moments_str
-        IPython.embed(colors='Linux') 
 
         # Plots 
         '''

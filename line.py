@@ -40,12 +40,11 @@ class Line(Base_Analysis):
         return_dict = { }
         for i in spatial_sampling: 
             radius_x = time_axis * np.mean(vel_x[i]) 
-            radius_x -= np.mean(radius_x) 
+            radius_x -= np.min(radius_x) 
             data_out = self.data_process(data_var[i], radius_x, 
                        auto_correlation_len)
             return_dict[i] = data_out 
-            return_dict[i]['variable'] = data_var[i] 
-            return_dict[i]['radius']   = radius_x 
+            return_dict[i]['radius'] = radius_x 
         return return_dict  
 
 # Spatial Data 
@@ -63,7 +62,6 @@ class Line(Base_Analysis):
             data_out = self.data_process(data_var[i], radius_z, 
                        auto_correlation_len)
             return_dict[i] = data_out 
-            return_dict[i]['variable'] = data_var[i] 
             return_dict[i]['radius']   = radius_z 
         return return_dict  
 
@@ -84,21 +82,17 @@ class Line(Base_Analysis):
                                 ['correlation'].keys())
         corr_len          = len(dict_in[sampling_location[0]]
                                 ['correlation']['correlation'])
-        # Radius, Variable and fluctuation
+        # Radius and fluctuation
         radius      = [ ]
-        variable    = [ ]
         fluctuation = [ ]
         for i in range(radius_len): 
             radius_temp      = [ ] 
-            var_temp         = [ ]
             fluctuation_temp = [ ]
             for j in sampling_location: 
                 radius_temp.append(dict_in[j]['radius'][i])
-                var_temp.append(dict_in[j]['variable'][i])
                 fluctuation_temp.append(dict_in[j]['fluctuation'][i])
             # Append the mean of each element 
             radius.append(np.mean(radius_temp)) 
-            variable.append(np.mean(var_temp)) 
             fluctuation.append(np.mean(fluctuation_temp))
         # Correlation 
         correlation_radius = [ ]
@@ -126,11 +120,11 @@ class Line(Base_Analysis):
             spe_return.append(np.mean(temp_spe)) 
 
         # Create Return Dictionary 
-        return_crunched_dat = { 'radius'        : np.asarray(radius), 
-                                'variable'      : np.asarray(variable),
-                                'fluctuation'   : np.asarray(fluctuation), 
-                                'correlation'   : corr_temp_dict, 
-                                'spe'           : np.asarray(spe_return) } 
+        return_crunched_dat = { 'radius'            : np.asarray(radius), 
+                                'fluctuation'       : np.asarray(fluctuation), 
+                                'correlation'       : corr_temp_dict, 
+                                'spe'               : np.asarray(spe_return), 
+                                'sampling_location' : sampling_location }
         return return_crunched_dat  
 
  # Calculates z_axis
