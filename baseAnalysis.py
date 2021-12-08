@@ -315,17 +315,10 @@ class Base_Analysis:
         fluctuation   = self.reynolds_decomposition(variable) 
         correlation   = self.auto_correlation(radius, fluctuation) 
         spe           = self.filter_decay(variable) 
-        length_scales = self.length_scales(correlation['correlation_radius'], 
-                        correlation['correlation'], 
-                        fluctuation, spe)
-        moments       = self.raw_stat_moments(variable) 
-
         # Return dictionary 
         return_dict = { 'fluctuation'   : fluctuation,  
                         'correlation'   : correlation, 
-                        'spe'           : spe,
-                        'length_scales' : length_scales,
-                        'stat_moments'  : moments }
+                        'spe'           : spe }
         return return_dict
 
 # Plot Legendre filter  

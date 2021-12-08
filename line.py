@@ -44,6 +44,8 @@ class Line(Base_Analysis):
             data_out = self.data_process(data_var[i], radius_x, 
                        auto_correlation_len)
             return_dict[i] = data_out 
+            return_dict[i]['variable'] = data_var[i] 
+            return_dict[i]['radius']   = radius_x 
         return return_dict  
 
 # Spatial Data 
@@ -61,7 +63,17 @@ class Line(Base_Analysis):
             data_out = self.data_process(data_var[i], radius_z, 
                        auto_correlation_len)
             return_dict[i] = data_out 
+            return_dict[i]['variable'] = data_var[i] 
+            return_dict[i]['radius']   = radius_z 
         return return_dict  
+
+# Create constant cutoff_scale 
+    def const_cutoff_k(self, dict_variable): 
+        scales = self.length_scales( dict_variable['correlation']['correlation_radius'],
+                                     dict_variable['correlation']['correlation'],
+                                     dict_variable['fluctuation'],
+                                     dict_variable['spe'] )
+        return scales['cutoff_k'] 
 
 # Calculates the mean 
     def data_cruncher(self, dict_in): 
@@ -72,9 +84,6 @@ class Line(Base_Analysis):
                                 ['correlation'].keys())
         corr_len          = len(dict_in[sampling_location[0]]
                                 ['correlation']['correlation'])
-        boxcar_keys       = list(dict_in[sampling_location[0]]['boxcart'].keys())
-        legendre_keys     = list(dict_in[sampling_location[0]]['legendre'].keys())
-        IPython.embed(colors='Linux') 
         # Radius, Variable and fluctuation
         radius      = [ ]
         variable    = [ ]
@@ -115,19 +124,13 @@ class Line(Base_Analysis):
             for j in sampling_location: 
                 temp_spe.append(dict_in[j]['spe'][i]) 
             spe_return.append(np.mean(temp_spe)) 
-        
-        # Calculate length scales 
-        length_scales = self.length_scales(correlation_radius, 
-                                               correlation, 
-                                               fluctuation, spe_return) 
 
-    # Create Return Dictionary 
+        # Create Return Dictionary 
         return_crunched_dat = { 'radius'        : np.asarray(radius), 
                                 'variable'      : np.asarray(variable),
                                 'fluctuation'   : np.asarray(fluctuation), 
                                 'correlation'   : corr_temp_dict, 
-                                'spe'           : np.asarray(spe_return),  
-                                'length_scales' : length_scales }
+                                'spe'           : np.asarray(spe_return) } 
         return return_crunched_dat  
 
  # Calculates z_axis

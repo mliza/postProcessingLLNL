@@ -3,6 +3,7 @@ import numpy as np
 import pickle 
 import os 
 import IPython 
+import ipdb 
 import math 
 import matplotlib.pyplot as plt 
 import matplotlib.gridspec as gridspec 
@@ -124,7 +125,9 @@ if (probe_flag is True):
                                auto_correlation_len=probe_correlation_lag)
             correlation      = dict_out['correlation']
             pwr_spectral     = dict_out['spe']
-            length_scales    = dict_out['length_scales'] 
+            length_scales    = probe.length_scales(dict_out['correlation_radius'],
+                                dict_out['correlation'], dict_out['fluctuation'],
+                                dict_out['spe'])
 
             boxcar_dict      = probe.boxcar_filter(probe_radius, 
                                variable, const_cutoff_k) 
@@ -172,24 +175,27 @@ if (line_flag == True):
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
-            IPython.embed(colors='Linux') 
             temporal_dict[i][j] = line.data_cruncher(temp_dict) 
             spatial_dict[i][j]  = line.data_cruncher(spat_dict) 
     # Calculate Scales 
-            IPython.embed(colors='Linux') 
+            '''
             line.plot_correlation_spe(temporal_dict[i][j], 
                                spatial_dict[i][j], dataset=i, variable=j,
                                time_sub_sampling=time_sub_sampling,
                                spatial_sub_sampling=spatial_sub_sampling,
                                saving_path = line_correlation_save) 
+            '''
+        temporal_cutoff_k = line.const_cutoff_k(temporal_dict[i]['U-X']) 
+        spatial_cutoff_k  = line.const_cutoff_k(spatial_dict[i]['U-Z']) 
     # Testing scales 
         print(i, j)  
         for j in variables:
             # Spatial 
-            spatial_cutoff_k = spatial_dict[i]['U-Z']['length_scales']['cutoff_k']
+            # Another loop for vaiable is needed 
             spatial_boxcar   = line.boxcar_filter(spatial_dict[i][j]['radius'], 
                                               spatial_dict[i][j]['variable'], 
                                               spatial_cutoff_k)
+            ipdb.set_trace()
             spatial_moments_str = line.statistical_moments_str(spatial_boxcar) 
             spatial_legendre    = line.legendre_interpolation(spatial_boxcar) 
             spatial_dict[i][j]['boxcar']     = spatial_boxcar
@@ -202,7 +208,6 @@ if (line_flag == True):
                                 saving_path=spatial_line_legendre) 
 
             # Temporal 
-            temporal_cutoff_k = temporal_dict[i]['U-Z']['length_scales']['cutoff_k']
             temporal_boxcar   = line.boxcar_filter(temporal_dict[i][j]['radius'], 
                                               temporal_dict[i][j]['variable'], 
                                               temporal_cutoff_k)
@@ -211,9 +216,12 @@ if (line_flag == True):
             temporal_dict[i][j]['boxcar']      = temporal_boxcar
             temporal_dict[i][j]['legendre']    = temporal_legendre
             temporal_dict[i][j]['moments_str'] = temporal_moments_str
+        IPython.embed(colors='Linux') 
 
         # Plots 
+        '''
             line.plot_boxcar(i,j, temporal_boxcar, temporal_moments_str, 
                         saving_path=temporal_line_boxcar) 
             line.plot_legendre(i, j, temporal_boxcar, temporal_legendre,
                                 saving_path=temporal_line_legendre) 
+        '''
