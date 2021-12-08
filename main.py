@@ -22,8 +22,8 @@ sub_sampling_flag     = False
 probe_sampling_rate   = 1 
 probe_correlation_lag = 40
 line_correlation_lag  = 50 
-time_sub_sampling     = 100
-spatial_sub_sampling  = 200 
+time_sub_sampling     = 200
+spatial_sub_sampling  = 950 
 
 # Paths 
 pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
@@ -51,6 +51,9 @@ probe_keys = list(probe.location.keys())
 line_keys  = list(line.location.keys()) 
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL', 'VORTMAG', 'P-DIL', 'RHO-DIL'] 
 variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P-DIL']  
+variables  = ['U-X', 'U-Z', 'U-Y', 'P'] 
+line_keys  = ['l0', 'l9']  
+
 
 # Add new data to structures if this is on 
 if (new_data_flag is True):
@@ -177,17 +180,24 @@ if (line_flag == True):
             spatial_dict[i][j]  = line.data_cruncher(spat_dict) 
     # Calculate Scales 
             '''
+            FIX ME !!! 
             line.plot_correlation_spe(temporal_dict[i][j], 
                                spatial_dict[i][j], dataset=i, variable=j,
                                time_sub_sampling=time_sub_sampling,
                                spatial_sub_sampling=spatial_sub_sampling,
                                saving_path = line_correlation_save) 
             '''
+        # Calculate absolute cutoff scales in wave space 
+        # and append to dictionaries 
         temporal_cutoff_k = line.const_cutoff_k(temporal_dict[i]['U-X']) 
         spatial_cutoff_k  = line.const_cutoff_k(spatial_dict[i]['U-Z']) 
-    # Testing scales 
-        IPython.embed(colors='Linux') 
-        print(i, j)  
+        for k in variables:
+            temporal_dict[i][k]['window_size'] = temporal_cutoff_k 
+            spatial_dict[i][k]['window_size']  = spatial_cutoff_k 
+    IPython.embed(colors='Linux') 
+    ## STOPPED HERE, NEED To figure out filters now!
+
+    '''
         for j in variables:
             # Spatial 
             # Another loop for vaiable is needed 
@@ -216,9 +226,8 @@ if (line_flag == True):
             temporal_dict[i][j]['moments_str'] = temporal_moments_str
 
         # Plots 
-        '''
             line.plot_boxcar(i,j, temporal_boxcar, temporal_moments_str, 
                         saving_path=temporal_line_boxcar) 
             line.plot_legendre(i, j, temporal_boxcar, temporal_legendre,
                                 saving_path=temporal_line_legendre) 
-        '''
+    '''
