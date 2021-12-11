@@ -187,15 +187,6 @@ if (line_flag == True):
             # Data Crunched  
             temporal_dict[i][j] = line.data_cruncher(temp_dict) 
             spatial_dict[i][j]  = line.data_cruncher(spat_dict) 
-    # Calculate Scales 
-            '''
-            FIX ME !!! 
-            line.plot_correlation_spe(temporal_dict[i][j], 
-                               spatial_dict[i][j], dataset=i, variable=j,
-                               time_sub_sampling=time_sub_sampling,
-                               spatial_sub_sampling=spatial_sub_sampling,
-                               saving_path = line_correlation_save) 
-            '''
         # Calculate absolute cutoff scales in wave space 
         # and append to dictionaries 
         temporal_cutoff_k = line.const_cutoff_k(temporal_dict[i]['U-X']) 
@@ -211,12 +202,30 @@ if (line_flag == True):
                                         temporal_dict[i][j]['window_size'])
             temporal_dict[i][j]['legendre'] = temporal_filters['legendre'] 
             temporal_dict[i][j]['boxcar']   = temporal_filters['boxcar'] 
+            temporal_dict[i][j]['length_scales'] = line.length_scales(
+                    temporal_dict[i][j]['correlation']['correlation_radius'],
+                    temporal_dict[i][j]['correlation']['correlation'],
+                    temporal_dict[i][j]['fluctuation'],
+                    temporal_dict[i][j]['spe'])
             # Spatial Data
             spatial_filters  = line.filters(spatial_raw_dict[i][j], 
                                         spatial_dict[i][j]['window_size'])
             spatial_dict[i][j]['legendre'] = spatial_filters['legendre'] 
             spatial_dict[i][j]['boxcar']   = spatial_filters['boxcar'] 
-    IPython.embed(colors='Linux') 
+            spatial_dict[i][j]['length_scales'] = line.length_scales(
+                    spatial_dict[i][j]['correlation']['correlation_radius'],
+                    spatial_dict[i][j]['correlation']['correlation'],
+                    spatial_dict[i][j]['fluctuation'],
+                    spatial_dict[i][j]['spe'])
+
+            # Plots 
+            line.plot_correlation_spe(temporal_dict[i][j], 
+                       spatial_dict[i][j], dataset=i, variable=j,
+                       time_sub_sampling=time_sub_sampling,
+                       spatial_sub_sampling=spatial_sub_sampling,
+                       saving_path = line_correlation_save) 
+    IPython.embed(colors= 'Linux') 
+
 
     '''
         for j in variables:

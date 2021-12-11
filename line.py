@@ -180,11 +180,6 @@ class Line(Base_Analysis):
 
         return filter_return 
 
-
-                
-
-        
-                
  # Calculates z_axis
     def z_axis(self, dataset_number, sampling_rate=1):
         # Loading data 
