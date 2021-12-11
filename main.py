@@ -14,16 +14,16 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = True  
+line_flag             = True    
 probe_flag            = False  
 new_data_flag         = False    
-scatter_probe_flag    = False 
+scatter_probe_flag    = True  
 sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
 probe_correlation_lag = 50
 line_correlation_lag  = 50 
-time_sub_sampling     = 90  #Spatial results, g(r) 
-spatial_sub_sampling  = 100 #Temporal results f(r)  
+time_sub_sampling     = 45  #Spatial results, g(r), 2334 times   
+spatial_sub_sampling  = 10 #Temporal results f(r), 500 positions  
 
 # Paths 
 pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
@@ -125,8 +125,8 @@ if (probe_flag is True):
                                auto_correlation_len=probe_correlation_lag)
             correlation      = dict_out['correlation']
             pwr_spectral     = dict_out['spe']
-            length_scales    = probe.length_scales(dict_out['correlation_radius'],
-                                dict_out['correlation'], dict_out['fluctuation'],
+            length_scales    = probe.length_scales(correlation['correlation_radius'],
+                                correlation['correlation'], dict_out['fluctuation'],
                                 dict_out['spe'])
 
             boxcar_dict      = probe.boxcar_filter(probe_radius, 
