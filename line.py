@@ -144,7 +144,7 @@ class Line(Base_Analysis):
         # Parameters for data crunching 
         legendre_keys = list(legendre.keys()) 
         boxcar_keys   = list(boxcar.keys())
-        boxcar_keys.remove('window_size') 
+        boxcar_keys.remove('window_size')
         boxcar_return   = { } 
         legendre_return = { }
 
@@ -159,7 +159,7 @@ class Line(Base_Analysis):
                 for k in sampling_elements:
                     temp_boxcar.append(boxcar_dict[k][i][j]) 
                 boxcar_vec.append(np.mean(temp_boxcar))
-            boxcar_return[i] = boxcar_vec 
+            boxcar_return[i] = np.asarray(boxcar_vec) 
 
         # Iterates through legendre_keys  
         for i in legendre_keys:
@@ -172,7 +172,9 @@ class Line(Base_Analysis):
                 for k in sampling_elements:
                     temp_legendre.append(legendre_dict[k][i][j]) 
                 legendre_vec.append(np.mean(temp_legendre))
-            legendre_return[i] = legendre_vec 
+            legendre_return[i] = np.asarray(legendre_vec) 
+        # Add window_size to boxcar 
+        boxcar_return['window_size'] = window_size 
 
         # Return dictionary 
         filter_return = { 'boxcar'   : boxcar_return, 
@@ -232,7 +234,7 @@ class Line(Base_Analysis):
 
          # Plotting Spatial Correlation 
         ax1.plot(spatial_corr_rad, spatial_corr, linewidth='2', color='k', 
-                label=f'L={spatial_integral_m}, $\lambda$={spatial_taylor_m}')
+                label=f'L_{22}={spatial_integral_m}, $\lambda_g$={spatial_taylor_m}')
         ax1.set_ylabel('Correlation, spatial series')
         ax1.grid('-.')
         ax1.legend(handlelength=0, handletextpad=0, fancybox=True) 
@@ -251,7 +253,7 @@ class Line(Base_Analysis):
 
         # Plotting Time Correlation  
         ax3.plot(temporal_corr_rad, temporal_corr, linewidth='3', color='k',
-            label=f'L={temporal_integral_m}, $\lambda$={temporal_taylor_m}')
+            label=f'L_{11}={temporal_integral_m}, $\lambda_f$={temporal_taylor_m}')
         ax3.set_ylabel('Correlation, temporal series')
         ax3.set_xlabel('Radius [m]')
         ax3.grid('-.')
@@ -274,6 +276,7 @@ class Line(Base_Analysis):
         else: 
             plt.savefig(os.path.join(saving_path, f'{dataset}_{variable}.png')) 
             plt.close() 
+
 
 # String Title 
     def plot_title(self, dataset_number, dataset_variable):
