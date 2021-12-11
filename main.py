@@ -15,7 +15,7 @@ import line
 
 # Configuration Parameters 
 line_flag             = True  
-probe_flag            = True 
+probe_flag            = False  
 new_data_flag         = False    
 scatter_probe_flag    = False 
 sub_sampling_flag     = False 
@@ -167,13 +167,15 @@ temporal_dict = { }
 spatial_dict  = { }
 temporal_raw_dict = { }
 spatial_raw_dict  = { }  
-if (line_flag == True):
+if (line_flag is True):
+    # Crunching for data 
     for i in line_keys: 
         temporal_dict[i]     = { }
         spatial_dict[i]      = { }  
         temporal_raw_dict[i] = { }
         spatial_raw_dict[i]  = { }  
         for j in variables:
+            print(i, j, 'before scale') 
             temp_dict = line.temporal_data(i,j, n_points=spatial_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
@@ -193,8 +195,10 @@ if (line_flag == True):
             temporal_dict[i][k]['window_size'] = int(np.round(temporal_cutoff_k)) 
             spatial_dict[i][k]['window_size']  = int(np.round(spatial_cutoff_k)) 
 
+    # Filters and Plots 
     for i in line_keys: 
         for j in variables:
+            print(i, j, 'filters') 
             # Temporal Data
             temporal_filters = line.filters(temporal_raw_dict[i][j], 
                                         temporal_dict[i][j]['window_size'])
@@ -241,4 +245,3 @@ if (line_flag == True):
             line.plot_legendre(i, j, temporal_dict[i][j]['boxcar'], 
                                      temporal_dict[i][j]['legendre'],
                                 saving_path=temporal_line_legendre) 
-            IPython.ebemd(colors='Linux') 
