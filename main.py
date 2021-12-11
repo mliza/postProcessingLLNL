@@ -22,8 +22,8 @@ sub_sampling_flag     = False
 probe_sampling_rate   = 1 
 probe_correlation_lag = 40
 line_correlation_lag  = 50 
-time_sub_sampling     = 200
-spatial_sub_sampling  = 950 
+time_sub_sampling     = 90
+spatial_sub_sampling  = 100 
 
 # Paths 
 pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
@@ -85,7 +85,7 @@ if (probe_flag is True):
         # Constant length scale (U-X)
         const_cutoff_k  = probe.const_cutoff_k(i, probe_radius, 
                 correlation_lag=probe_correlation_lag)  
-        if (scatter_probe_flag == True):
+        if (scatter_probe_flag is True):
             probe.plot_scatter(i, 'P', 'RHO', probe_radius, const_cutoff_k,  
                                correlation_lag=probe_correlation_lag,
                                saving_path=probe_scatter) 
@@ -167,15 +167,24 @@ if (probe_flag is True):
 # Line and crunched data  
 temporal_dict = { }
 spatial_dict  = { }
+temporal_raw_dict = { }
+spatial_raw_dict  = { }  
 if (line_flag == True):
     for i in line_keys: 
-        temporal_dict[i] = { }
-        spatial_dict[i]  = { }  
+        temporal_dict[i]     = { }
+        spatial_dict[i]      = { }  
+        temporal_raw_dict[i] = { }
+        spatial_raw_dict[i]  = { }  
         for j in variables:
             temp_dict = line.temporal_data(i,j, n_points=spatial_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
+
+            # Not crunched data 
+            temporal_raw_dict[i][j] = temp_dict
+            spatial_raw_dict[i][j]  = spat_dict
+            # Data Crunched  
             temporal_dict[i][j] = line.data_cruncher(temp_dict) 
             spatial_dict[i][j]  = line.data_cruncher(spat_dict) 
     # Calculate Scales 
@@ -194,8 +203,20 @@ if (line_flag == True):
         for k in variables:
             temporal_dict[i][k]['window_size'] = temporal_cutoff_k 
             spatial_dict[i][k]['window_size']  = spatial_cutoff_k 
+
+    for i in line_keys: 
+        for j in variables:
+            # Temporal Data
+            temporal_filters = line.filters(temporal_raw_dict[i][j], 
+                                        temporal_dict[i][j]['window_size'])
+            temporal_dict[i][j]['legendre'] = temporal_filters['legendre'] 
+            temporal_dict[i][j]['boxcar']   = temporal_filters['boxcar'] 
+            # Spatial Data
+            spatial_filters  = line.filters(spatial_raw_dict[i][j], 
+                                        spatial_dict[i][j]['window_size'])
+            spatial_dict[i][j]['legendre'] = spatial_filters['legendre'] 
+            spatial_dict[i][j]['boxcar']   = spatial_filters['boxcar'] 
     IPython.embed(colors='Linux') 
-    ## STOPPED HERE, NEED To figure out filters now!
 
     '''
         for j in variables:

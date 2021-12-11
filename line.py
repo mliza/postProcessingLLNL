@@ -60,9 +60,9 @@ class Line(Base_Analysis):
         # Calculate absolute length scales 
         for i in temporal_sampling:  
             data_out = self.data_process(data_var[i], radius_z, 
-                       auto_correlation_len)
+                       auto_correlation_len)       
             return_dict[i] = data_out 
-            return_dict[i]['radius']   = radius_z 
+            return_dict[i]['radius'] = radius_z 
         return return_dict  
 
 # Create constant cutoff_scale 
@@ -127,6 +127,64 @@ class Line(Base_Analysis):
                                 'sampling_location' : sampling_location }
         return return_crunched_dat  
 
+# Calculate all filters 
+    def filters(self, dict_in, window_size):
+        sampling_elements = list(dict_in.keys()) 
+        boxcar_dict       = { }
+        legendre_dict     = { } 
+
+        # Calculates boxcar filter and legendre interpolation 
+        for i in sampling_elements: 
+            boxcar           = self.boxcar_filter(dict_in[i]['radius'],
+                                dict_in[i]['variable'], window_size) 
+            legendre         = self.legendre_interpolation(boxcar) 
+            boxcar_dict[i]   = boxcar  
+            legendre_dict[i] = legendre      
+
+        # Parameters for data crunching 
+        legendre_keys = list(legendre.keys()) 
+        boxcar_keys   = list(boxcar.keys())
+        boxcar_keys.remove('window_size') 
+        boxcar_return   = { } 
+        legendre_return = { }
+
+        # Iterates through boxcar_keys  
+        for i in boxcar_keys:
+            boxcar_vec   = [ ]
+            # Iterates through boxcar_keys length  
+            boxcar_len = range(len(boxcar[i])) 
+            for j in boxcar_len:
+                temp_boxcar = [ ]
+                # Iterates through sampling elements
+                for k in sampling_elements:
+                    temp_boxcar.append(boxcar_dict[k][i][j]) 
+                boxcar_vec.append(np.mean(temp_boxcar))
+            boxcar_return[i] = boxcar_vec 
+
+        # Iterates through legendre_keys  
+        for i in legendre_keys:
+            legendre_vec = [ ] 
+            # Iterates through legendre_keys length  
+            legendre_len = range(len(legendre[i])) 
+            for j in legendre_len:
+                temp_legendre = [ ]
+                # Iterates through sampling elements
+                for k in sampling_elements:
+                    temp_legendre.append(legendre_dict[k][i][j]) 
+                legendre_vec.append(np.mean(temp_legendre))
+            legendre_return[i] = legendre_vec 
+
+        # Return dictionary 
+        filter_return = { 'boxcar'   : boxcar_return, 
+                          'legendre' : legendre_return }
+
+        return filter_return 
+
+
+                
+
+        
+                
  # Calculates z_axis
     def z_axis(self, dataset_number, sampling_rate=1):
         # Loading data 

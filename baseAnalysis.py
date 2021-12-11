@@ -318,6 +318,7 @@ class Base_Analysis:
         # Return dictionary 
         return_dict = { 'fluctuation'   : fluctuation,  
                         'correlation'   : correlation, 
+                        'variable'      : variable, 
                         'spe'           : spe }
         return return_dict
 
