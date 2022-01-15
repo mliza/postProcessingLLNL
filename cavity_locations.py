@@ -52,5 +52,3 @@ pickle_out_probe.close()
 pickle_out_line = open(line_points, 'wb') 
 pickle.dump(lsize, pickle_out_line)  
 pickle_out_line.close() 
-
-

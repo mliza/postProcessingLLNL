@@ -179,7 +179,7 @@ if (line_flag is True):
             temp_dict = line.temporal_data(i,j, n_points=spatial_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
             spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
-                                    auto_correlation_len=line_correlation_lag) 
+                                    auto_correlation_len=40) 
 
             # Not crunched data 
             temporal_raw_dict[i][j] = temp_dict

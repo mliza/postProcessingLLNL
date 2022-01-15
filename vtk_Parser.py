@@ -44,11 +44,22 @@ def data_to_binary(bounds, pvtu_in, pickle_out, vtk_out):
     Y = cell_center.points[:,1] 
     Z = cell_center.points[:,2] 
     
-    sorting_index = np.argsort(X) 
-    Xs = X[sorting_index]
-    Ys = Y[sorting_index]
-    Zs = Z[sorting_index]
+    sorting_index_x = np.argsort(X) 
+    Xs_x = X[sorting_index_x]
+    Ys_x = Y[sorting_index_x]
+    Zs_x = Z[sorting_index_x]
+
+    sorting_index_y = np.argsort(Ys_x) 
+    Xs_xy = X[sorting_index_y]
+    Ys_xy = Y[sorting_index_y]
+    Zs_xy = Z[sorting_index_y]
+
+    sorting_index_z = np.argsort(Zs_xy) 
+    Xs_xyz = X[sorting_index_z]
+    Ys_xyz = Y[sorting_index_z]
+    Zs_xyz = Z[sorting_index_z]
     IPython.embed(colors='Linux')
+
     ax = plt.axes(projection='3d') 
     ax.plot3D(X[0:5], Y[0:5], Z[0:5], '*-') 
     #Y = Y.sort() #test  

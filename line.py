@@ -233,8 +233,8 @@ class Line(Base_Analysis):
         fig.suptitle(f'{dataset}, {variable}, time sampling={time_sub_sampling}, spatial sampling={spatial_sub_sampling}') 
 
          # Plotting Spatial Correlation 
-        ax1.plot(spatial_corr_rad, spatial_corr, linewidth='2', color='k', 
-                label=f'$L_{22}$={spatial_integral_m}, $\lambda_g$={spatial_taylor_m}')
+        ax1.plot(spatial_corr_rad, spatial_corr, 'o-', linewidth='3', color='k', 
+                label=f'$L_{{22}}$={spatial_integral_m}, $\lambda_g$={spatial_taylor_m}')
         ax1.set_ylabel('Correlation, spatial series')
         ax1.grid('-.')
         ax1.legend(handlelength=0, handletextpad=0, fancybox=True) 
@@ -252,8 +252,8 @@ class Line(Base_Analysis):
         ax2.legend() 
 
         # Plotting Time Correlation  
-        ax3.plot(temporal_corr_rad, temporal_corr, linewidth='3', color='k',
-            label=f'$L_{11}$={temporal_integral_m}, $\lambda_f$={temporal_taylor_m}')
+        ax3.plot(temporal_corr_rad, temporal_corr,'o-', linewidth='3', color='k',
+            label=f'$L_{{11}}$={temporal_integral_m}, $\lambda_f$={temporal_taylor_m}')
         ax3.set_ylabel('Correlation, temporal series')
         ax3.set_xlabel('Radius [m]')
         ax3.grid('-.')

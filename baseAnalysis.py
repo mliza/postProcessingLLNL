@@ -313,7 +313,8 @@ class Base_Analysis:
 # Calculate all properties 
     def data_process(self, variable, radius, auto_correlation_len): 
         fluctuation   = self.reynolds_decomposition(variable) 
-        correlation   = self.auto_correlation(radius, fluctuation) 
+        correlation   = self.auto_correlation(radius, fluctuation, 
+                                        auto_correlation_len) 
         spe           = self.filter_decay(variable) 
         # Return dictionary 
         return_dict = { 'fluctuation'   : fluctuation,  
