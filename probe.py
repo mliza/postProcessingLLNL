@@ -44,13 +44,14 @@ class Probe(Base_Analysis):
         time_axis  = self.working_data[dataset_number]['TIME'] 
         velocity_x = self.working_data[dataset_number]['U-X'] 
     # Sub sample data 
-        if (sampling_flag == True):
+        if sampling_flag:
             velocity_x  = self.sub_sampling(velocity_x)
             time_axis   = self.sub_sampling(time_axis)
     # Calculates radius 
         vel_x_len = len(velocity_x)
         mean      = np.mean(velocity_x) 
-        delta_x   = np.abs(mean * (time_axis[2] - time_axis[1]))
+        time_mean = np.mean(np.diff(time_axis)) 
+        delta_x   = np.abs(mean * time_mean)
         x_mean    = np.linspace(0, (delta_x * vel_x_len), vel_x_len)
         x_true_axis  = (time_axis * velocity_x) - (time_axis[0] * velocity_x[0])
         return_dict = { 'x_axis' : x_mean, 

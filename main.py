@@ -14,9 +14,9 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = True    
-probe_flag            = False  
-new_data_flag         = False    
+line_flag             = False   
+probe_flag            = True  
+new_data_flag         = False  
 scatter_probe_flag    = True  
 sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
@@ -26,8 +26,8 @@ time_sub_sampling     = 45  #Spatial results, g(r), 2334 times
 spatial_sub_sampling  = 10 #Temporal results f(r), 500 positions  
 
 # Paths 
-pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/data/data_5/pickle' 
-save_path      = '/Users/martin/Desktop/workingFiles/results' 
+pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_1/pickle' 
+save_path      = '/Users/martin/Desktop/results' 
 probe_save     = os.path.join(save_path, 'probe', 'total')
 probe_boxcar   = os.path.join(save_path, 'probe', 'boxcar')
 probe_scatter  = os.path.join(save_path, 'probe', 'scatter')
@@ -44,17 +44,16 @@ spatial_line_boxcar    = os.path.join(line_boxcar, 'spatial')
 # Loading class's instances  
 base  = baseAnalysis.Base_Analysis(pickle_path)
 probe = probe.Probe(pickle_path, sampling_rate=probe_sampling_rate) 
-line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate) 
+#line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate) 
 
 # Keys 
 probe_keys = list(probe.location.keys()) 
-line_keys  = list(line.location.keys()) 
+#line_keys  = list(line.location.keys()) 
 variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL', 'VORTMAG', 'P-DIL', 'RHO-DIL'] 
 variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P-DIL']  
 
-
 # Add new data to structures if this is on 
-if (new_data_flag is True):
+if new_data_flag:
 # Add new data probe  
     for i in probe_keys: 
         pressure     = probe.working_data[i]['P'] 
@@ -62,8 +61,9 @@ if (new_data_flag is True):
         rho          = probe.working_data[i]['RHO'] 
         pressure_dil = pressure * dilatation 
         rho_dil      = rho * dilatation 
-        probe.add_new_variable(i, 'RHO-DIL', rho_dil, 
+        probe.add_new_variable(i, 'P-DIL', pressure_dil, 
                 pickle_path, 'new_probe_data') 
+
 # Add new data line 
     for i in line_keys: 
         pressure     = line.working_data[i]['P'] 
@@ -74,7 +74,7 @@ if (new_data_flag is True):
         line.add_new_variable(i,'RHO-DIL', rho_dil, 
                 pickle_path, 'new_line_data') 
 
-if (probe_flag is True):
+if probe_flag:
     for i in probe_keys:
         print(i) 
     # Plot Scatter 
@@ -83,7 +83,7 @@ if (probe_flag is True):
         # Constant length scale (U-X)
         const_cutoff_k  = probe.const_cutoff_k(i, probe_radius, 
                 correlation_lag=probe_correlation_lag)  
-        if (scatter_probe_flag is True):
+        if scatter_probe_flag:
             probe.plot_scatter(i, 'P', 'RHO', probe_radius, const_cutoff_k,  
                                correlation_lag=probe_correlation_lag,
                                saving_path=probe_scatter) 
@@ -167,7 +167,7 @@ temporal_dict = { }
 spatial_dict  = { }
 temporal_raw_dict = { }
 spatial_raw_dict  = { }  
-if (line_flag is True):
+if line_flag:
     # Crunching for data 
     for i in line_keys: 
         temporal_dict[i]     = { }
