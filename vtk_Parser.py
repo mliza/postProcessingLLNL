@@ -19,12 +19,12 @@ import time
 
 # Inputs, create a region where the data will be clipped (approx values) 
 #workingFiles_path = '/Users/martin/Desktop/workingFiles/dump_172000' # cavity 
-workingFiles_path = '/Users/martin/Desktop/workingFiles/dump_339000' # flat plate
+workingFiles_path = '/Users/martin/Desktop/workingFiles/plate_2' # flat plate
 x1, x2     = 9e-3, 1.2e-2
 y1, y2     = 1e-2, 1.2e-2
 z1, z2     = 1e-3, 1.2e-3
 #pvtu_in    = os.path.join(workingFiles_path, 'SOLUT3.172000.pvtu') #cavity  
-pvtu_in    = os.path.join(workingFiles_path, 'SOLUT.0339000.pvtu') #flat plate  
+pvtu_in    = os.path.join(workingFiles_path, 'SOLUT.0757000.pvtu') #flat plate  
 pickle_out = 'clipped_data'
 vtk_out    = 'clipped_data'
 bounds     = [x1,x2, y1,y2, z1,z2] 
