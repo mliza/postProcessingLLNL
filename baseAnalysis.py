@@ -310,6 +310,17 @@ class Base_Analysis:
                          'sgs_str'       : sgs_str }
         return moment_str
 
+# Calculates dynamic viscosity using Sutherland's Law
+    def sutherland_law(self, temperature): 
+    # https://doc.comsol.com/5.5/doc/com.comsol.help.cfd/cfd_ug_fluidflow_high_mach.08.27.html 
+        # From table for air 
+        mu_ref  = 1.716e-5 #[kg/ms]
+        T_ref   = 273      #[K]
+        S_const = 111      #[K] 
+        mu = mu_ref * ( (temperature / T_ref)**(3/2) * ( 
+                        (T_ref + S_const) / (temperature + S_const) ) ) 
+        return mu 
+
 # Calculate all properties 
     def data_process(self, variable, radius, auto_correlation_len): 
         fluctuation   = self.reynolds_decomposition(variable) 

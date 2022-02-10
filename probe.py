@@ -53,6 +53,7 @@ class Probe(Base_Analysis):
         time_mean = np.mean(np.diff(time_axis)) 
         delta_x   = np.abs(mean * time_mean)
         x_mean    = np.linspace(0, (delta_x * vel_x_len), vel_x_len)
+        IPython.embed(colors='Linux')
         x_true_axis  = (time_axis * velocity_x) - (time_axis[0] * velocity_x[0])
         return_dict = { 'x_axis' : x_mean, 
                         'x_true' : x_true_axis }

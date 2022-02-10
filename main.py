@@ -14,19 +14,19 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = False   
+line_flag             = True 
 probe_flag            = True  
 new_data_flag         = False  
-scatter_probe_flag    = True  
+scatter_probe_flag    = True   
 sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
 probe_correlation_lag = 50
 line_correlation_lag  = 50 
-time_sub_sampling     = 45  #Spatial results, g(r), 2334 times   
+time_sub_sampling     = 45 #Spatial results, g(r), 2334 times   
 spatial_sub_sampling  = 10 #Temporal results f(r), 500 positions  
 
 # Paths 
-pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_1/pickle' 
+pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_2/pickle' 
 save_path      = '/Users/martin/Desktop/results' 
 probe_save     = os.path.join(save_path, 'probe', 'total')
 probe_boxcar   = os.path.join(save_path, 'probe', 'boxcar')
@@ -44,35 +44,37 @@ spatial_line_boxcar    = os.path.join(line_boxcar, 'spatial')
 # Loading class's instances  
 base  = baseAnalysis.Base_Analysis(pickle_path)
 probe = probe.Probe(pickle_path, sampling_rate=probe_sampling_rate) 
-#line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate) 
+line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate) 
 
 # Keys 
 probe_keys = list(probe.location.keys()) 
-#line_keys  = list(line.location.keys()) 
-variables  = ['U-X', 'U-Y', 'U-Z', 'P', 'T', 'RHO', 'RHOE', 'GRADRHOMAG', 'DIL', 'VORTMAG', 'P-DIL', 'RHO-DIL'] 
+line_keys  = list(line.location.keys()) 
 variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P-DIL']  
 
 # Add new data to structures if this is on 
 if new_data_flag:
 # Add new data probe  
     for i in probe_keys: 
+        mu           = probe.sutherland_law(probe.working_data[i]['T']) 
         pressure     = probe.working_data[i]['P'] 
         dilatation   = probe.working_data[i]['DIL'] 
         rho          = probe.working_data[i]['RHO'] 
         pressure_dil = pressure * dilatation 
-        rho_dil      = rho * dilatation 
-        probe.add_new_variable(i, 'P-DIL', pressure_dil, 
-                pickle_path, 'new_probe_data') 
-
+        nu           = mu / rho
+        probe.add_new_variable(i, 'P-DIL', pressure_dil, pickle_path, 'new_probe_data') 
+        probe.add_new_variable(i, 'MU', mu, pickle_path, 'new_probe_data') 
+        probe.add_new_variable(i, 'NU', nu, pickle_path, 'new_probe_data') 
 # Add new data line 
     for i in line_keys: 
+        mu           = line.sutherland_law(line.working_data[i]['T']) 
         pressure     = line.working_data[i]['P'] 
         dilatation   = line.working_data[i]['DIL'] 
         rho          = line.working_data[i]['RHO'] 
         pressure_dil = pressure * dilatation 
-        rho_dil      = rho * dilatation 
-        line.add_new_variable(i,'RHO-DIL', rho_dil, 
-                pickle_path, 'new_line_data') 
+        nu           = mu / rho
+        line.add_new_variable(i, 'P-DIL', pressure_dil, pickle_path, 'new_line_data') 
+        line.add_new_variable(i, 'MU', mu, pickle_path, 'new_line_data') 
+        line.add_new_variable(i, 'NU', nu, pickle_path, 'new_line_data') 
 
 if probe_flag:
     for i in probe_keys:
@@ -128,7 +130,6 @@ if probe_flag:
             length_scales    = probe.length_scales(correlation['correlation_radius'],
                                 correlation['correlation'], dict_out['fluctuation'],
                                 dict_out['spe'])
-
             boxcar_dict      = probe.boxcar_filter(probe_radius, 
                                variable, const_cutoff_k) 
             legendre_dict    = probe.legendre_interpolation(boxcar_dict) 

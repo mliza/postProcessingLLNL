@@ -1,17 +1,16 @@
 #!/opt/homebrew/bin/python3.9 
 import os 
 import pickle 
+# Pickle path 
+pickle_path = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_2/pickle' 
 # Import manual 
-lsize = { 'l0': [ 0.1, 0.0005, -0.027, 0.1, 0.0005, 0.034 ], 
-          'l1': [ 0.1, 0.0010, -0.027, 0.1, 0.0010, 0.034 ],
-          'l2': [ 0.1, 0.0020, -0.027, 0.1, 0.0020, 0.034 ], 
-          'l3': [ 0.1, 0.0030, -0.027, 0.1, 0.0030, 0.034 ],
-          'l4': [ 0.1, 0.0050, -0.027, 0.1, 0.0050, 0.034 ],
-          'l5': [ 0.13, 0.0010, -0.027, 0.13, 0.0010, 0.034 ],
-          'l6': [ 0.13, 0.0020, -0.027, 0.13, 0.0020, 0.034 ], 
-          'l7': [ 0.13, 0.0030, -0.027, 0.13, 0.0030, 0.034 ],
-          'l8': [ 0.13, 0.0050, -0.027, 0.13, 0.0050, 0.034 ],
-          'l9': [ 0.13, 0.0005, -0.027, 0.13, 0.0005, 0.034 ] }
+lsize = { 'l0': [ 0.09, 0.0, 0.0085, 0.09, 0.05, 0.0085 ], 
+          'l1': [ 0.10, 0.0, 0.0085, 0.10, 0.05, 0.0085 ],
+          'l2': [ 0.11, 0.0, 0.0085, 0.11, 0.05, 0.0085 ], 
+          'l3': [ 0.12, 0.0, 0.0085, 0.12, 0.05, 0.0085 ],
+          'l4': [ 0.13, 0.0, 0.0085, 0.13, 0.05, 0.0085 ],
+          'l5': [ 0.14, 0.0, 0.0085, 0.14, 0.05, 0.0085 ],
+          'l6': [ 0.15, 0.0, 0.0085, 0.15, 0.05, 0.0085 ] } 
 
 psize = { 'p00': [ 0.09, 0.00025, 0.0085 ],  
           'p01': [ 0.09, 0.00050, 0.0085 ], 
@@ -76,9 +75,8 @@ psize = { 'p00': [ 0.09, 0.00025, 0.0085 ],
           'p66': [ 0.15, 0.00400, 0.0085 ], 
           'p67': [ 0.15, 0.00500, 0.0085 ] } 
 
-pickle_path = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/PROBES_1/pickle' 
 probe_points = os.path.join(pickle_path, 'probe_points.pickle') 
-line_points = os.path.join(pickle_path, 'line_points.pickle') 
+line_points  = os.path.join(pickle_path, 'line_points.pickle') 
 pickle_out_probe = open(probe_points, 'wb') 
 pickle.dump(psize, pickle_out_probe)  
 pickle_out_probe.close() 
