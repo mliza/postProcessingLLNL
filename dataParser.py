@@ -18,7 +18,7 @@ import pickle
 import IPython
 
 # Paths setup 
-probe_flag     = True 
+probe_flag     = False 
 line_flag      = True 
 script_path    = os.getcwd() 
 directory_path = os.path.dirname(script_path) 
@@ -80,25 +80,26 @@ def line_parser(data_path):
         file_in_abs_path = os.path.join(probe_path, i)
         pd_in    = pd.read_csv(file_in_abs_path, sep='\t', header=None) 
         pd_len   = len(pd_in)
-        var_vect = [ ]
         [iteration, variable] = i.split('.') 
         # Create a matrix from the variable, and vectors for time and iteration 
         for l in range(pd_len):
+            temp_var = [ ]
             array_in = pd_in.iloc[l][0].split() 
             # Load data and converts it to array, float 64 
             iter_elem = int(array_in[0])
             time_elem = float(array_in[1])
-            # Convert all elements to floats in a one line for loop
-            for value in array_in[3:-1]: var_vect.append(float(value))
+            for m in range(3, len(array_in)): 
+                temp_var.append(float(array_in[m])) 
             # Only initialize the first element 
             if l == 0:
                 iter_vect  = [ ]
                 time_vect  = [ ]
+                var_matrix = np.empty(shape=(pd_len, len(temp_var))) 
                 var_matrix = [ ] 
             # Populating vectors and matrix 
             iter_vect.append(iter_elem) 
             time_vect.append(time_elem) 
-            var_matrix.append(np.array(var_vect)) 
+            var_matrix.append(temp_var) 
         # Store data  
         if not iteration in data: 
             data[iteration] = { } 
@@ -111,13 +112,13 @@ if __name__=="__main__":
 # Probe Data  
     if probe_flag:
         data_probe = probe_parser(data_path) 
-        pickleOut  = open(f'{saving_path}/test_probe_data.pickle', 'wb')
+        pickleOut  = open(f'{saving_path}/probe_data.pickle', 'wb')
         pickle.dump(data_probe, pickleOut)
         pickleOut.close() 
 
 # Line Data 
     if line_flag:
         data_line= line_parser(data_path) 
-        pickleOut = open(f'{saving_path}/test_line_data.pickle', 'wb')
+        pickleOut = open(f'{saving_path}/line_data.pickle', 'wb')
         pickle.dump(data_line, pickleOut)
         pickleOut.close() 

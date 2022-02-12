@@ -14,9 +14,9 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = True 
-probe_flag            = True  
-new_data_flag         = False  
+line_flag             = False  
+probe_flag            = False  
+new_data_flag         = False 
 scatter_probe_flag    = True   
 sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
