@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.9
+#!/usr/local/bin/python3
 '''
     Date:   06/24/2021
     Author: Martin E. Liza
@@ -26,12 +26,12 @@ class Line(Base_Analysis):
     flag_type   = 'line_data'
     flag_points = 'line_points' 
 
-# Temporal Data 
+# Temporal Data, keeps all time samples, sub-samples on space  
     def temporal_data(self, dataset_number, 
             dataset_variable, n_points, auto_correlation_len=50): 
         # Loads data 
         data_var   = self.working_data[dataset_number][dataset_variable].T
-        vel_x      = self.working_data[dataset_number]['U-X']
+        vel_x      = self.working_data[dataset_number]['U-X'].T
         time_axis  = self.working_data[dataset_number]['TIME'] 
         [time_rows, spatial_columns] = np.shape(vel_x) 
         # Make n_points times series 
@@ -47,22 +47,22 @@ class Line(Base_Analysis):
             return_dict[i]['radius'] = radius_x 
         return return_dict  
 
-# Spatial Data 
+# Spatial Data, keeps all spatial samples sub-samples on time 
     def spatial_data(self, dataset_number,
-            dataset_variable, n_points, auto_correlation_len=50): 
+            dataset_variable, n_points, axis, auto_correlation_len=50): 
         # Loads data 
-        data_var   = self.working_data[dataset_number][dataset_variable]
+        data_var = self.working_data[dataset_number][dataset_variable]
+        radius   = self.radius(dataset_number, axis=axis)   
         [time_rows, spatial_columns] = np.shape(data_var) 
-        radius_z = self.z_axis(dataset_number)  
         # Make n_points times series 
         temporal_sampling  = np.arange(0, time_rows, n_points) 
         return_dict = { }
         # Calculate absolute length scales 
         for i in temporal_sampling:  
-            data_out = self.data_process(data_var[i], radius_z, 
+            data_out = self.data_process(data_var[i], radius, 
                        auto_correlation_len)       
             return_dict[i] = data_out 
-            return_dict[i]['radius'] = radius_z 
+            return_dict[i]['radius'] = radius 
         return return_dict  
 
 # Create constant cutoff_scale 
@@ -85,15 +85,19 @@ class Line(Base_Analysis):
         # Radius and fluctuation
         radius      = [ ]
         fluctuation = [ ]
+        variable    = [ ]
         for i in range(radius_len): 
             radius_temp      = [ ] 
             fluctuation_temp = [ ]
+            variable_temp    = [ ]
             for j in sampling_location: 
                 radius_temp.append(dict_in[j]['radius'][i])
                 fluctuation_temp.append(dict_in[j]['fluctuation'][i])
+                variable_temp.append(dict_in[j]['variable'][i])
             # Append the mean of each element 
             radius.append(np.mean(radius_temp)) 
             fluctuation.append(np.mean(fluctuation_temp))
+            variable.append(np.mean(variable_temp))
         # Correlation 
         correlation_radius = [ ]
         correlation        = [ ]
@@ -118,10 +122,10 @@ class Line(Base_Analysis):
             for j in sampling_location: 
                 temp_spe.append(dict_in[j]['spe'][i]) 
             spe_return.append(np.mean(temp_spe)) 
-
         # Create Return Dictionary 
         return_crunched_dat = { 'radius'            : np.asarray(radius), 
                                 'fluctuation'       : np.asarray(fluctuation), 
+                                'variable'       : np.asarray(variable), 
                                 'correlation'       : corr_temp_dict, 
                                 'spe'               : np.asarray(spe_return), 
                                 'sampling_location' : sampling_location }
@@ -182,26 +186,30 @@ class Line(Base_Analysis):
 
         return filter_return 
 
- # Calculates z_axis
-    def z_axis(self, dataset_number, sampling_rate=1):
+ # Calculates z_axis rename to radius
+    def radius(self, dataset_number, sampling_rate=1, axis='z'):
         # Loading data 
         variable     = self.working_data[dataset_number]['U-Z'] 
         sub_variable = self.sub_sampling(variable, sampling_rate) 
+        len_radius   = np.shape(sub_variable)[1]  
         # Load positions 
-        # NOTE: x-axis is chosen to be x_3, if data needs to be collected 
-        # in other directions, then this will need to change 
         data_location = self.location[dataset_number] 
         x1            = [data_location[0], data_location[3]] 
         x2            = [data_location[1], data_location[4]] 
         x3            = [data_location[2], data_location[5]] 
-        x3_size       = np.shape(sub_variable)[1]  
-        z_axis        = np.linspace(x3[0], x3[1], x3_size) 
+        # Calculates radius depending on the given axis  
+        if axis == 'x':
+            radius    = np.linspace(x1[0], x1[1], len_radius) 
+        if axis == 'y':
+            radius    = np.linspace(x2[0], x2[1], len_radius) 
+        if axis == 'z':
+            radius    = np.linspace(x3[0], x3[1], len_radius) 
         # Shift the axis, so it starts at 0.0 
-        if (np.min(z_axis) < 0):  
-            z_axis += np.abs(np.min(z_axis))
-        if (np.min(z_axis) > 0): 
-            z_axis -= np.min(z_axis)
-        return z_axis 
+        if (np.min(radius) < 0):  
+            radius += np.abs(np.min(radius))
+        if (np.min(radius) > 0): 
+            radius -= np.min(radius)
+        return radius 
 
 # Plot correlation + spe (temporal)  
     def plot_correlation_spe(self, temporal_dict, spatial_dict, dataset, variable,
@@ -277,6 +285,28 @@ class Line(Base_Analysis):
             plt.savefig(os.path.join(saving_path, f'{dataset}_{variable}.png')) 
             plt.close() 
 
+# Plot Boundary Layer 
+    def plot_BL(self, spatial_dict, saving_path=None):
+        line_keys = list(spatial_dict.keys()) 
+        location  = self.location
+        location_vect  = [ ]
+        vel_thickness  = [ ]
+        temp_thickness = [ ]
+        for i in line_keys: 
+            location_vect.append(location[i][0])
+            vel_thickness.append(spatial_dict[i]['U-X']['BL']['thickness'])
+            temp_thickness.append(spatial_dict[i]['T']['BL']['thickness'])
+        plt.plot(location_vect, vel_thickness, '*-', label='U-X')
+        plt.plot(location_vect, temp_thickness, '*-', label='T')
+        plt.xlabel('x-radius [m]')
+        plt.ylabel('y-radius [m]')
+        plt.legend() 
+        plt.grid('.-')
+        if (saving_path == None):
+            plt.show()
+        else: 
+            plt.savefig(os.path.join(saving_path, 'BL.png')) 
+            plt.close() 
 
 # String Title 
     def plot_title(self, dataset_number, dataset_variable):
@@ -286,3 +316,21 @@ class Line(Base_Analysis):
         var_string = f'{dataset_number}, {dataset_variable}'  
         title_str  = f'{var_string} at {location}'
         return title_str 
+
+# Wall functions  
+    def wall_function(self, spatial_dict_in):  
+        tau_wall  = spatial_dict_in['U-X']['BL']['wall_variable'] 
+        bl_len    = len(spatial_dict_in["U-X"]['BL']["variable"]) 
+        rho       = spatial_dict_in['RHO']['variable'][0:bl_len] 
+        mu        = spatial_dict_in['MU']['variable'][0:bl_len] 
+        vel_x     = spatial_dict_in['U-X']['BL']['variable'] 
+        radius_y  = spatial_dict_in['U-X']['BL']['radius'] 
+        # Calculates u+ and y+ 
+        kappa = 0.41 
+        betta = 5.2 
+        linear_u_plus = vel_x * np.sqrt(rho / tau_wall)  
+        y_plus        = radius_y * np.sqrt(rho * tau_wall) / mu 
+        log_u_plus    = (1 / kappa) * np.log(y_plus) + betta
+
+        IPython.embed(colors='Linux') 
+        plt.semilogx(y_plus, linear_u_plus) 

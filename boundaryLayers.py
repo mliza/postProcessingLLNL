@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/python3.9
+#!/opt/homebrew/bin/python3
 '''
     Date:   01/19/2022
     Author: Martin E. Liza
@@ -90,6 +90,7 @@ def boundary_layer_thickness(data_dict, variable, freestream_condition):
     plt.ylabel('Thickness [mm]')
     #plt.show() 
     # Return dictionary 
+    IPython.embed(colors='Linux') 
     dict_out = { 'bl_thickness_y'   : thickness_y, 
                  f'edge_{variable}' : edge_variable, 
                  f'wall_{variable}' : wall_variable,

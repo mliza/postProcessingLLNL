@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.9 
+#!/usr/local/bin/python3
 import os 
 import pickle 
 # Import manual 

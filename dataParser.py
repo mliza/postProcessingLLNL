@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/python3.9 
+#!/opt/homebrew/bin/python3 
 '''
     Date:   07/26/2021
     Author: Martin E. Liza
@@ -22,7 +22,7 @@ probe_flag     = False
 line_flag      = True 
 script_path    = os.getcwd() 
 directory_path = os.path.dirname(script_path) 
-data_path      = os.path.join(directory_path, 'plate_data', 'data_2')
+data_path      = os.path.join(directory_path, 'plate_data', 'data_7')
 saving_path    = os.path.join(data_path, 'pickle')  
 
 def probe_parser(data_path):
@@ -118,7 +118,7 @@ if __name__=="__main__":
 
 # Line Data 
     if line_flag:
-        data_line= line_parser(data_path) 
+        data_line = line_parser(data_path) 
         pickleOut = open(f'{saving_path}/line_data.pickle', 'wb')
         pickle.dump(data_line, pickleOut)
         pickleOut.close() 

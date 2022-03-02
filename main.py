@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/python3.9
+#!/opt/homebrew/bin/python3
 import numpy as np 
 import pickle 
 import os 
@@ -14,19 +14,21 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = False  
-probe_flag            = False  
-new_data_flag         = False 
-scatter_probe_flag    = True   
+line_flag             = True 
+probe_flag            = False     
+new_data_flag         = False  
+scatter_probe_flag    = True 
 sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
-probe_correlation_lag = 50
+probe_correlation_lag = 40
 line_correlation_lag  = 50 
 time_sub_sampling     = 45 #Spatial results, g(r), 2334 times   
 spatial_sub_sampling  = 10 #Temporal results f(r), 500 positions  
+temperature_inf       = 2164 #freestream temperature
+velocity_inf          = 2600 #freestream velocity  
 
 # Paths 
-pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_2/pickle' 
+pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_7/pickle' 
 save_path      = '/Users/martin/Desktop/results' 
 probe_save     = os.path.join(save_path, 'probe', 'total')
 probe_boxcar   = os.path.join(save_path, 'probe', 'boxcar')
@@ -49,7 +51,7 @@ line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate)
 # Keys 
 probe_keys = list(probe.location.keys()) 
 line_keys  = list(line.location.keys()) 
-variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P-DIL']  
+variables  = ['U-X', 'U-Z', 'U-Y', 'P', 'T', 'RHO', 'DIL', 'P-DIL', 'MU']  
 
 # Add new data to structures if this is on 
 if new_data_flag:
@@ -176,12 +178,10 @@ if line_flag:
         temporal_raw_dict[i] = { }
         spatial_raw_dict[i]  = { }  
         for j in variables:
-            print(i, j, 'before scale') 
             temp_dict = line.temporal_data(i,j, n_points=spatial_sub_sampling, 
                                     auto_correlation_len=line_correlation_lag) 
-            spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, 
+            spat_dict = line.spatial_data(i,j, n_points=time_sub_sampling, axis='y', 
                                     auto_correlation_len=40) 
-
             # Not crunched data 
             temporal_raw_dict[i][j] = temp_dict
             spatial_raw_dict[i][j]  = spat_dict
@@ -195,9 +195,20 @@ if line_flag:
         for k in variables:
             temporal_dict[i][k]['window_size'] = int(np.round(temporal_cutoff_k)) 
             spatial_dict[i][k]['window_size']  = int(np.round(spatial_cutoff_k)) 
-
+            # Calculate and storage BL properties (only on the spatial dictionary)  
+            if k == 'U-X':
+                spatial_dict[i][k]['BL'] = line.boundary_layer_thickness(
+                                           spatial_dict[i], k, 
+                                           freestream_condition=velocity_inf) 
+            if k == 'T':
+                spatial_dict[i][k]['BL'] = line.boundary_layer_thickness(
+                                           spatial_dict[i], k,
+                                           freestream_condition=temperature_inf) 
+    # Plotting BL thickness  
+    line.plot_BL(spatial_dict, saving_path=save_path)  
     # Filters and Plots 
     for i in line_keys: 
+        line.wall_function(spatial_dict[i]) 
         for j in variables:
             print(i, j, 'filters') 
             # Temporal Data

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.9
+#!/usr/local/bin/python3
 '''
     Date:   07/09/2021
     Author: Martin E. Liza
@@ -462,4 +462,22 @@ class Base_Analysis:
             f'boxcar_{dataset_number}_{dataset_variable}.png'))
             plt.close() 
 
-
+# Boundary Layer data Parser (data_dict should be spatial_dict['l0'])  
+    def boundary_layer_thickness(self, data_dict, data_variable, freestream_condition):
+        y_radius = data_dict[data_variable]['radius'] 
+        variable = data_dict[data_variable]['variable'] 
+        indx     = np.abs(variable - 0.99 * freestream_condition).argmin() 
+        thickness_y   = y_radius[indx]
+        edge_variable = variable[indx]  
+        # Find wall variable 
+        if data_variable == 'U-X':
+            wall_variable = (variable[1] - variable[0]) / (y_radius[1] - y_radius[0]) 
+        if data_variable == 'T':
+            wall_variable = variable[0]  
+        # Return dictionary 
+        dict_out = { 'thickness'     : thickness_y, 
+                     'edge_variable' : edge_variable, 
+                     'wall_variable' : wall_variable,
+                     'radius'        : y_radius[0:indx],
+                     'variable'      : variable[0:indx] }
+        return dict_out  
