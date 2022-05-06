@@ -23,7 +23,6 @@
     Martin E. Liza   08/29/2021   Added add_new_variable. 
 '''
 import os 
-import sys 
 import pickle
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -132,7 +131,7 @@ class Base_Analysis:
                         'taylor_k'   : f'{taylor_k:3e}' }
         return scales_dict 
 
-# Calculates filter decay 
+# Calculates filter decay, energy spectrum 
     def filter_decay(self, variable, n_bin_number=2): 
         # Filter setup 1/10 decay
         data_size            = np.shape(variable)[0] 

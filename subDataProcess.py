@@ -3,7 +3,8 @@
     Date:   02/24/2022
     Author: Martin E. Liza
     File:   subDataProcess.py
-    Def:
+    Def:    Average streamwise line data and returns streamwise at each 
+            line location.
 
     Author		    Date		Revision
     ----------------------------------------------------
@@ -16,10 +17,10 @@ import pickle
 import os 
 
 # Paths 
-script_path = os.getcwd() 
+script_path    = os.getcwd() 
 directory_path = os.path.dirname(script_path)
-data_path = os.path.join(directory_path, 'plate_data', 'data_7') 
-saving_path  = os.path.join(data_path, 'pickle') 
+data_path      = os.path.join(directory_path, 'plate_data', 'data_7') 
+saving_path    = os.path.join(data_path, 'pickle') 
 
 # Loading parsing function 
 line_data = dp.line_parser(data_path) 

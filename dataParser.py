@@ -8,6 +8,7 @@
     Author		    Date		Revision
     ----------------------------------------------------
     Martin E. Liza	07/26/2021	Initial version.
+    Martin E. Liza  11/05/221   Cleaned up and added main. 
 '''
 import numpy as np
 import pandas as pd 
@@ -18,8 +19,8 @@ import pickle
 import IPython
 
 # Paths setup 
-probe_flag     = False 
-line_flag      = True 
+probe_flag     = True 
+line_flag      = False 
 script_path    = os.getcwd() 
 directory_path = os.path.dirname(script_path) 
 data_path      = os.path.join(directory_path, 'plate_data', 'data_7')

@@ -30,8 +30,8 @@ class Line(Base_Analysis):
     def temporal_data(self, dataset_number, 
             dataset_variable, n_points, auto_correlation_len=50): 
         # Loads data 
-        data_var   = self.working_data[dataset_number][dataset_variable].T
-        vel_x      = self.working_data[dataset_number]['U-X'].T
+        data_var   = self.working_data[dataset_number][dataset_variable]
+        vel_x      = self.working_data[dataset_number]['U-X']
         time_axis  = self.working_data[dataset_number]['TIME'] 
         [time_rows, spatial_columns] = np.shape(vel_x) 
         # Make n_points times series 
@@ -39,9 +39,9 @@ class Line(Base_Analysis):
         # Create fictitious time series data  
         return_dict = { }
         for i in spatial_sampling: 
-            radius_x = time_axis * np.mean(vel_x[i]) 
+            radius_x = time_axis * np.mean(vel_x.T[i]) 
             radius_x -= np.min(radius_x) 
-            data_out = self.data_process(data_var[i], radius_x, 
+            data_out = self.data_process(data_var.T[i], radius_x, 
                        auto_correlation_len)
             return_dict[i] = data_out 
             return_dict[i]['radius'] = radius_x 
@@ -286,22 +286,24 @@ class Line(Base_Analysis):
             plt.close() 
 
 # Plot Boundary Layer 
-    def plot_BL(self, spatial_dict, saving_path=None):
+    def plot_BL(self, spatial_dict, velocity_inf, temperature_inf,  saving_path=None):
         line_keys = list(spatial_dict.keys()) 
         location  = self.location
         location_vect  = [ ]
         vel_thickness  = [ ]
         temp_thickness = [ ]
         for i in line_keys: 
-            location_vect.append(location[i][0])
-            vel_thickness.append(spatial_dict[i]['U-X']['BL']['thickness'])
-            temp_thickness.append(spatial_dict[i]['T']['BL']['thickness'])
-        plt.plot(location_vect, vel_thickness, '*-', label='U-X')
-        plt.plot(location_vect, temp_thickness, '*-', label='T')
-        plt.xlabel('x-radius [m]')
-        plt.ylabel('y-radius [m]')
+            location_vect.append(location[i][0] * 10**3)
+            vel_thickness.append(spatial_dict[i]['U-X']['BL']['thickness'] * 10**3)
+            temp_thickness.append(spatial_dict[i]['T']['BL']['thickness'] * 10**3)
+        plt.plot(location_vect, vel_thickness, '*-', label=f'U-X={velocity_inf}[m/s]')
+        plt.plot(location_vect, temp_thickness, '*-', label=f'T={temperature_inf}[K]')
+        plt.xlabel('x-radius [mm]')
+        plt.ylabel('y-radius [mm]')
         plt.legend() 
         plt.grid('.-')
+        # Calculates the Prandlt number, is not being output 
+        prandlt_num = (np.array(vel_thickness) / np.array(temp_thickness))**3 
         if (saving_path == None):
             plt.show()
         else: 
@@ -318,19 +320,26 @@ class Line(Base_Analysis):
         return title_str 
 
 # Wall functions  
-    def wall_function(self, spatial_dict_in):  
+    def plot_wall_function(self, dataset_number, spatial_dict_in, saving_path=None):  
         tau_wall  = spatial_dict_in['U-X']['BL']['wall_variable'] 
-        bl_len    = len(spatial_dict_in["U-X"]['BL']["variable"]) 
+        bl_len    = len(spatial_dict_in['U-X']['BL']['variable']) 
         rho       = spatial_dict_in['RHO']['variable'][0:bl_len] 
         mu        = spatial_dict_in['MU']['variable'][0:bl_len] 
         vel_x     = spatial_dict_in['U-X']['BL']['variable'] 
         radius_y  = spatial_dict_in['U-X']['BL']['radius'] 
-        # Calculates u+ and y+ 
-        kappa = 0.41 
-        betta = 5.2 
-        linear_u_plus = vel_x * np.sqrt(rho / tau_wall)  
-        y_plus        = radius_y * np.sqrt(rho * tau_wall) / mu 
-        log_u_plus    = (1 / kappa) * np.log(y_plus) + betta
 
-        IPython.embed(colors='Linux') 
-        plt.semilogx(y_plus, linear_u_plus) 
+        # Calculates u+ and y+ 
+        u_plus = vel_x * np.sqrt(rho / tau_wall)  
+        y_plus = radius_y * np.sqrt(rho * tau_wall) / mu 
+
+        # Plot 
+        plt.semilogx(y_plus[1:-1], u_plus[1:-1], '*-') 
+        plt.xlabel('log(y+)  [ ]')
+        plt.ylabel('u+  [ ]') 
+        plt.grid('-.') 
+
+        if (saving_path == None):
+            plt.show()
+        else: 
+            plt.savefig(os.path.join(saving_path, f'wall_{dataset_number}.png')) 
+            plt.close() 

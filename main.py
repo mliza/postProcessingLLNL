@@ -3,7 +3,6 @@ import numpy as np
 import pickle 
 import os 
 import IPython 
-import ipdb 
 import math 
 import matplotlib.pyplot as plt 
 import matplotlib.gridspec as gridspec 
@@ -14,30 +13,30 @@ import probe
 import line 
 
 # Configuration Parameters 
-line_flag             = True 
-probe_flag            = False     
-new_data_flag         = False  
-scatter_probe_flag    = True 
+line_flag             = True   
+probe_flag            = False  
+new_data_flag         = False   
+scatter_probe_flag    = False    
 sub_sampling_flag     = False 
 probe_sampling_rate   = 1 
 probe_correlation_lag = 40
 line_correlation_lag  = 50 
-time_sub_sampling     = 45 #Spatial results, g(r), 2334 times   
-spatial_sub_sampling  = 10 #Temporal results f(r), 500 positions  
-temperature_inf       = 2164 #freestream temperature
-velocity_inf          = 2600 #freestream velocity  
+time_sub_sampling     = 45 #keep all positions 
+spatial_sub_sampling  = 10 #keep all times 
+temperature_inf       = 1200  #216 #freestream temperature
+velocity_inf          = 2500 #3000 #freestream velocity  
 
 # Paths 
 pickle_path    = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_7/pickle' 
-save_path      = '/Users/martin/Desktop/results' 
+save_path      = '/Users/martin/Documents/Research/UoA/Projects/LLNL/plate_data/data_7/results'
 probe_save     = os.path.join(save_path, 'probe', 'total')
 probe_boxcar   = os.path.join(save_path, 'probe', 'boxcar')
 probe_scatter  = os.path.join(save_path, 'probe', 'scatter')
 probe_legendre = os.path.join(save_path, 'probe', 'legendre') 
 line_save      = os.path.join(save_path, 'line')
 line_correlation_save = os.path.join(line_save, 'correlation') 
-line_boxcar    = os.path.join(save_path, 'line', 'boxcar')
-line_legendre  = os.path.join(save_path, 'line', 'legendre') 
+line_boxcar    = os.path.join(line_save, 'boxcar')
+line_legendre  = os.path.join(line_save, 'legendre') 
 temporal_line_legendre = os.path.join(line_legendre, 'temporal') 
 spatial_line_legendre  = os.path.join(line_legendre, 'spatial') 
 temporal_line_boxcar   = os.path.join(line_boxcar, 'temporal') 
@@ -193,8 +192,8 @@ if line_flag:
         temporal_cutoff_k = line.const_cutoff_k(temporal_dict[i]['U-X']) 
         spatial_cutoff_k  = line.const_cutoff_k(spatial_dict[i]['U-Z']) 
         for k in variables:
-            temporal_dict[i][k]['window_size'] = int(np.round(temporal_cutoff_k)) 
-            spatial_dict[i][k]['window_size']  = int(np.round(spatial_cutoff_k)) 
+            #temporal_dict[i][k]['window_size'] = int(np.round(temporal_cutoff_k)) 
+            #spatial_dict[i][k]['window_size']  = int(np.round(spatial_cutoff_k)) 
             # Calculate and storage BL properties (only on the spatial dictionary)  
             if k == 'U-X':
                 spatial_dict[i][k]['BL'] = line.boundary_layer_thickness(
@@ -205,13 +204,14 @@ if line_flag:
                                            spatial_dict[i], k,
                                            freestream_condition=temperature_inf) 
     # Plotting BL thickness  
-    line.plot_BL(spatial_dict, saving_path=save_path)  
+    line.plot_BL(spatial_dict, velocity_inf, temperature_inf, saving_path=save_path)  
     # Filters and Plots 
     for i in line_keys: 
-        line.wall_function(spatial_dict[i]) 
+        line.plot_wall_function(i, spatial_dict[i], saving_path=save_path) 
         for j in variables:
             print(i, j, 'filters') 
             # Temporal Data
+            IPython.embed(colors='Linux') 
             temporal_filters = line.filters(temporal_raw_dict[i][j], 
                                         temporal_dict[i][j]['window_size'])
             temporal_dict[i][j]['legendre'] = temporal_filters['legendre'] 
