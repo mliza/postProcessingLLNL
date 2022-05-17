@@ -36,9 +36,9 @@ def data_mapping(abs_path_in):
     return [x_mapping, y_mapping, z_mapping] 
 
 # Data split 
-def data_split(dict_in, nx, ny, nz):
+def data_split(dict_in, nx, ny, nz, mapping_path):
     N = range(nx* ny* nz) 
-    mapping  = data_mapping(path_in) 
+    mapping  = data_mapping(mapping_path) 
     dict_out = { } 
     # Using zip to iterates through 2 loops at the same time 
     for (i, j, k, n) in zip(mapping[0], mapping[1], mapping[2], N):
@@ -80,8 +80,10 @@ def plane_xz(data_in, nx, nz, y_val):
 
 
 if __name__ =="__main__":
-    path_in = '../dataOut'
-    writing_flag = False
+    path_in     = '../../plate_data/data_9'
+    path_temp   = os.path.join(path_in, 'temp_data')
+    path_pickle = os.path.join(path_in, 'pickle')
+    writing_flag = False 
     nx     = 1359  
     ny     = 89    
     nz     = 638   
@@ -91,13 +93,14 @@ if __name__ =="__main__":
     if writing_flag is True: 
         dict_in = { }
         for i in var_in:
-            dict_in[i] = data_loader(i, path_in) 
-        dict_out = data_split(dict_in, nx, ny, nz)
-        pickle_manager(pickle_name='data', pickle_path=path_in, data_in=dict_out)  
+            dict_in[i] = data_loader(i, path_temp) 
+        dict_out = data_split(dict_in, nx, ny, nz, mapping_path=path_temp)
+        pickle_manager(pickle_name='data', pickle_path=path_pickle,
+                        data_in=dict_out)  
 
     # Loading flag 
     if writing_flag is False:
-        data_in = pickle_manager(pickle_name='data', pickle_path=path_in)  
+        data_in = pickle_manager(pickle_name='data', pickle_path=path_pickle)  
         plane_xz(data_in, nx, nz, y_val=80) 
 
 
