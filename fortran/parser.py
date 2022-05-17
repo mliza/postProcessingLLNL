@@ -65,9 +65,20 @@ def pickle_manager(pickle_name, pickle_path, data_in=None):
         pickle_out.close() 
 
 # Plot plane 
+def plot_line(data_in, val_x, val_y, x_dim=None, y_dim=None, z_dim=None):
+    if x_dim is None:
+        plt.plot(data_in[val_x][:, y_dim, z_dim], 
+                data_in[val_y][:, y_dim, z_dim], 'o')
+    if y_dim is None:
+        plt.plot(data_in[val_x][x_dim, :, z_dim], 
+                data_in[val_y][x_dim, :, z_dim], 'o')
+    if z_dim is None:
+        plt.plot(data_in[val_x][x_dim, y_dim, :], 
+                data_in[val_y][x_dim, y_dim, :], 'o')
+    plt.grid('-.') 
+
 def plane_xz(data_in, nx, nz, y_val):
     X, Y = np.meshgrid(data_in['X'][0,:,0], data_in['Y'][0,:,0]) 
-    IPython.embed(colors='Linux') 
     ax = plt.axes(projection='3d') 
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
@@ -101,6 +112,7 @@ if __name__ =="__main__":
     # Loading flag 
     if writing_flag is False:
         data_in = pickle_manager(pickle_name='data', pickle_path=path_pickle)  
+        IPython.embed(colors='Linux') 
         plane_xz(data_in, nx, nz, y_val=80) 
 
 
