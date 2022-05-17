@@ -4,11 +4,11 @@ program scalar_reader
     double precision :: mach_number, angle_of_attack, reynolds_number, time_step
     integer, parameter :: n_max = 77166738 
     double precision, dimension(n_max) :: scalar_variable 
-    character(len=30) file_in, file_out 
+    character(len=50) file_in, file_out 
 
     ! Input output grid 
-    file_in    = '../data/GRADRHOMAG.0838100.q' 
-    file_out   = '../dataOut/GRADRHOMAG.dat' 
+    file_in    = '../../plate_data/data_9/BOX/DIL.0838100.q'
+    file_out   = '../../plate_data/data_9/temp_data/DIL.dat'
 
     print *, 'Loading: ', file_in  ! Print statement  
     open(unit=7, file=file_in, & 

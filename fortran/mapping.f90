@@ -3,14 +3,14 @@ program mapping
     integer :: nx, ny, nz, i 
     integer, parameter :: n_max = 77166738
     integer, dimension(n_max) :: x_mapping, y_mapping, z_mapping 
-    character(len=30) mapping_vector 
+    character(len=51) mapping_vector 
 
     ! Define sizes of nx, ny, nz
     nx = 1359 
     ny = 89 
     nz = 638 
     ! Output file 
-    mapping_vector = '../data_out/mappingVector.dat' 
+    mapping_vector = '../../plate_data/data_9/temp_data/mappingVector.dat' 
 
     ! Write mapping for loop 
     do i = 1, (nx * ny * nz) 
