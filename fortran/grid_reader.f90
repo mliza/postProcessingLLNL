@@ -5,13 +5,13 @@ program grid_reader
     integer, parameter :: n_max = 77166738 !change me if the parameters change 
     !integer, parameter :: n_max = 12 !change me if the parameters change 
     double precision, dimension(n_max) :: x_variable, y_variable, z_variable 
-    character(len=30) grid_in, grid_out_x, grid_out_y, grid_out_z 
+    character(len=50) grid_in, grid_out_x, grid_out_y, grid_out_z 
 
     ! Input and output files  
-    grid_in    = '../data/U.xyz'
-    grid_out_x = '../dataOut/X.dat'
-    grid_out_y = '../dataOut/Y.dat'
-    grid_out_z = '../dataOut/Z.dat'
+    grid_in    = '../../plate_data/data_9/BOX/T.xyz'
+    grid_out_x = '../../plate_data/data_9/temp_data/X.dat'
+    grid_out_y = '../../plate_data/data_9/temp_data/Y.dat'
+    grid_out_z = '../../plate_data/data_9/temp_data/Z.dat'
 
     ! Opening and reading file 
     print *, 'Loading: ', grid_in  ! Print statement  

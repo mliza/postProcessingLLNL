@@ -7,8 +7,8 @@ program scalar_reader
     character(len=50) file_in, file_out 
 
     ! Input output grid 
-    file_in    = '../../plate_data/data_9/BOX/DIL.0838100.q'
-    file_out   = '../../plate_data/data_9/temp_data/DIL.dat'
+    file_in    = '../../plate_data/data_9/BOX/P.0838100.q'
+    file_out   = '../../plate_data/data_9/temp_data/P.dat'
 
     print *, 'Loading: ', file_in  ! Print statement  
     open(unit=7, file=file_in, & 
