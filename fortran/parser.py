@@ -8,6 +8,9 @@
     Author		    Date		Revision 
     ----------------------------------------------------
     Martin E. Liza	04/09/2022	Initial version.
+    Martin E. Liza  05/18/2022  Added the data_split function
+                                easier to implement in fortran and,
+                                removed the previous which used zip.
 '''
 import numpy as np
 import os 
@@ -35,18 +38,20 @@ def data_mapping(abs_path_in):
     f_in.close() 
     return [x_mapping, y_mapping, z_mapping] 
 
-# Data split 
+# Data split (easier to implement in fortran)  
 def data_split(dict_in, nx, ny, nz, mapping_path):
-    N = range(nx* ny* nz) 
-    mapping  = data_mapping(mapping_path) 
+    N = nx* ny* nz 
+    mapping = data_mapping(mapping_path) 
+    mapping = np.array(mapping).transpose() 
     dict_out = { } 
-    # Using zip to iterates through 2 loops at the same time 
-    for (i, j, k, n) in zip(mapping[0], mapping[1], mapping[2], N):
-        # Initialize arrays only at the beginning 
+    for n in range(N): 
         if n == 0:
             for key in dict_in: 
                 dict_out[key] = np.empty([nx, ny, nz]) 
         for key in dict_in: 
+            i = mapping[n][0] 
+            j = mapping[n][1] 
+            k = mapping[n][2] 
             dict_out[key][i][j][k] = dict_in[key][n] 
     return dict_out
 
@@ -68,13 +73,13 @@ def pickle_manager(pickle_name, pickle_path, data_in=None):
 def plot_line(data_in, val_x, val_y, x_dim=None, y_dim=None, z_dim=None):
     if x_dim is None:
         plt.plot(data_in[val_x][:, y_dim, z_dim], 
-                data_in[val_y][:, y_dim, z_dim], 'o')
+                data_in[val_y][:, y_dim, z_dim], '-o')
     if y_dim is None:
         plt.plot(data_in[val_x][x_dim, :, z_dim], 
-                data_in[val_y][x_dim, :, z_dim], 'o')
+                data_in[val_y][x_dim, :, z_dim], '-o')
     if z_dim is None:
         plt.plot(data_in[val_x][x_dim, y_dim, :], 
-                data_in[val_y][x_dim, y_dim, :], 'o')
+                data_in[val_y][x_dim, y_dim, :], '-o')
     plt.grid('-.') 
 
 def plane_xz(data_in, nx, nz, y_val):
@@ -87,8 +92,6 @@ def plane_xz(data_in, nx, nz, y_val):
     for k in range(nz): 
         ax.plot3D(data_in['X'][:,y_val,k], data_in['Y'][:,y_val,k], 
                  data_in['Z'][:,y_val,k], 'o')
-
-
 
 if __name__ =="__main__":
     path_in     = '../../plate_data/data_9'
@@ -105,15 +108,20 @@ if __name__ =="__main__":
         dict_in = { }
         for i in var_in:
             dict_in[i] = data_loader(i, path_temp) 
+        pickle_manager(pickle_name='data_in', pickle_path=path_pickle,
+                        data_in=dict_in)  
         dict_out = data_split(dict_in, nx, ny, nz, mapping_path=path_temp)
-        pickle_manager(pickle_name='data', pickle_path=path_pickle,
+        pickle_manager(pickle_name='data_out', pickle_path=path_pickle,
                         data_in=dict_out)  
 
     # Loading flag 
     if writing_flag is False:
-        data_in = pickle_manager(pickle_name='data', pickle_path=path_pickle)  
+        data_in = pickle_manager(pickle_name='data_in', 
+                                 pickle_path=path_pickle)  
+        data_out = pickle_manager(pickle_name='data_out', 
+                                 pickle_path=path_pickle)  
         IPython.embed(colors='Linux') 
+        #%matplotlib auto
+        plt.ion() 
         plane_xz(data_in, nx, nz, y_val=80) 
-
-
 
