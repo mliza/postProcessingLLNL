@@ -1,16 +1,16 @@
 program mapping
     implicit none
     integer :: nx, ny, nz, i 
-    integer, parameter :: n_max = 77166738
+    integer, parameter :: n_max = 9216
     integer, dimension(n_max) :: x_mapping, y_mapping, z_mapping 
-    character(len=51) mapping_vector 
+    character(len=53) mapping_vector 
 
     ! Define sizes of nx, ny, nz
-    nx = 1359 
-    ny = 89 
-    nz = 638 
+    nx = 32
+    ny = 18 
+    nz = 16
     ! Output file 
-    mapping_vector = '../../plate_data/data_9/temp_data/mappingVector.dat' 
+    mapping_vector = '../../plate_data/data_10/temp_data/mappingVector.dat' 
 
     ! Write mapping for loop 
     do i = 1, (nx * ny * nz) 

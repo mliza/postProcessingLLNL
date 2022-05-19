@@ -2,15 +2,15 @@ program vector_reader
     implicit none 
     integer :: i_max, j_max, k_max, n_blocks 
     double precision :: mach_number, angle_of_attack, reynolds_number, time_step
-    integer, parameter :: n_max = 77166738 
+    integer, parameter :: n_max = 9216 !change me, depends on nx, ny, nz   
     double precision, dimension(n_max) :: x_variable, y_variable, z_variable 
-    character(len=40) file_in, file_out_x, file_out_y, file_out_z 
+    character(len=50) file_in, file_out_x, file_out_y, file_out_z 
 
     ! Input output grid 
-    file_in    = '../../plate_data/data_9/BOX/U.0838100.q' 
-    file_out_x = '../../plate_data/data_9/temp_data/Ux.dat'
-    file_out_y = '../../plate_data/data_9/temp_data/Uy.dat'
-    file_out_z = '../../plate_data/data_9/temp_data/Uz.dat'
+    file_in    = '../../plate_data/data_10/smallBOX_BIN/U.0848001.q' 
+    file_out_x = '../../plate_data/data_10/temp_data/Ux.dat'
+    file_out_y = '../../plate_data/data_10/temp_data/Uy.dat'
+    file_out_z = '../../plate_data/data_10/temp_data/Uz.dat'
 
     ! Using cases 
     print *, 'Loading: ', file_in  ! Print statement  
