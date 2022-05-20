@@ -2,15 +2,15 @@ program grid_reader
     implicit none 
     integer :: i_max, j_max, k_max, n_blocks
     double precision :: mach_number, angle_of_attack, reynolds_number, time_step
-    integer, parameter :: n_max = 9216 !change me, depends on nx, ny, nz   
+    integer, parameter :: n_max = 30 !change me, depends on nx, ny, nz   
     double precision, dimension(n_max) :: x_variable, y_variable, z_variable 
     character(len=50) grid_in, grid_out_x, grid_out_y, grid_out_z 
 
     ! Input and output files  
-    grid_in    = '../../plate_data/data_10/smallBOX_BIN/T.xyz'
-    grid_out_x = '../../plate_data/data_10/temp_data/X.dat'
-    grid_out_y = '../../plate_data/data_10/temp_data/Y.dat'
-    grid_out_z = '../../plate_data/data_10/temp_data/Z.dat'
+    grid_in    = '../../plate_data/data_12/smallBOX_BIN/T.xyz'
+    grid_out_x = '../../plate_data/data_12/temp_data/X.dat'
+    grid_out_y = '../../plate_data/data_12/temp_data/Y.dat'
+    grid_out_z = '../../plate_data/data_12/temp_data/Z.dat'
 
     ! Opening and reading file 
     print *, 'Loading: ', grid_in  ! Print statement  
