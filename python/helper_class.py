@@ -3,24 +3,22 @@
     Date:   05/23/2022
     Author: Martin E. Liza
     File:   helper_class.py
-    Def:    
+    Def:    Contains some helper functions for data processing and manipulation  
 
     Author		    Date		Revision
     ----------------------------------------------------
     Martin E. Liza	05/23/2022	Initial version.
 '''
-
-from dataclasses import dataclass
-import pickle 
 import os 
-import numpy as np 
+import pickle 
 from scipy.io import FortranFile  
+from dataclasses import dataclass
 
 @dataclass 
 class Helper:  
     pass 
 
-# Loading Unformat fortran data  
+# Loading unformatted fortran data  
     def data_loader(self, variable_in, abs_path_in): 
         data_in = os.path.join(abs_path_in, f'{variable_in}.dat')
         f_in = FortranFile(data_in, 'r')
@@ -41,5 +39,3 @@ class Helper:
             pickle_out = open(file_out, 'wb') 
             pickle.dump(data_in, pickle_out)
             pickle_out.close() 
-
-
