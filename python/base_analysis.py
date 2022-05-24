@@ -57,10 +57,8 @@ class Base_Analysis:
         data         = { }
         # Iterates through all pickle files in pickle path 
         for i in range(len(pickle_files)): 
-            data_pickle       = os.path.join(pickle_path, pickle_files[i]) 
             pickle_name       = pickle_files[i].replace('.pickle','') 
-            data[pickle_name] = pickle.load(open(data_pickle, 'rb')) 
-            IPython.embed(colors='Linux') 
+            data[pickle_name] = helper.pickle_manager(pickle_name, pickle_path) 
         return data 
 
 # Adds a new variable 
