@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec 
 import seaborn as sb 
 # My files 
-import baseAnalysis
+import base_analysis
 import probe 
 import line 
 
@@ -43,7 +43,7 @@ temporal_line_boxcar   = os.path.join(line_boxcar, 'temporal')
 spatial_line_boxcar    = os.path.join(line_boxcar, 'spatial') 
 
 # Loading class's instances  
-base  = baseAnalysis.Base_Analysis(pickle_path)
+base  = base_analysis.Base_Analysis(pickle_path)
 probe = probe.Probe(pickle_path, sampling_rate=probe_sampling_rate) 
 line  = line.Line(pickle_path, sampling_rate=probe_sampling_rate) 
 

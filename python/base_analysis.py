@@ -31,6 +31,7 @@ import seaborn as sb
 from scipy import integrate
 from scipy.fft import fft 
 from scipy.special import legendre 
+import helper_class  
 import IPython
 
 class Base_Analysis:
@@ -51,6 +52,7 @@ class Base_Analysis:
     # Loads all the .pickle files from a folder and storage 
     # them in  multi dimensions dictionary 
     def load_data(self, pickle_path): 
+        helper = helper_class.Helper() 
         pickle_files = os.listdir(pickle_path) 
         data         = { }
         # Iterates through all pickle files in pickle path 
@@ -58,6 +60,7 @@ class Base_Analysis:
             data_pickle       = os.path.join(pickle_path, pickle_files[i]) 
             pickle_name       = pickle_files[i].replace('.pickle','') 
             data[pickle_name] = pickle.load(open(data_pickle, 'rb')) 
+            IPython.embed(colors='Linux') 
         return data 
 
 # Adds a new variable 

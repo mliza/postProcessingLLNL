@@ -6,7 +6,7 @@
     Def:
 
     Author		    Date		Revision 
-    ----------------------------------------------------
+    ------------------------------------------------------------------------
     Martin E. Liza	04/09/2022	Initial version.
     Martin E. Liza  05/18/2022  Added the data_split function
                                 easier to implement in fortran and,
@@ -48,7 +48,6 @@ def data_split(dict_in, nx, ny, nz, mapping_path):
             k = mapping[n][2] 
             dict_out[key][i][j][k] = dict_in[key][n] 
     return dict_out
-
 
 # Plot line for 2 variables  
 def plot_lineXY(data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None):
