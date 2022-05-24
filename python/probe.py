@@ -30,7 +30,7 @@ import matplotlib.gridspec as gridspec
 import seaborn as sb
 import os 
 # From my baseAnalysis class 
-from baseAnalysis import Base_Analysis
+from base_analysis import Base_Analysis
 
 # Probe Class 
 class Probe(Base_Analysis): 

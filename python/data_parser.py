@@ -2,7 +2,7 @@
 '''
     Date:   07/26/2021
     Author: Martin E. Liza
-    File:   dataParser.py
+    File:   data_parser.py
     Def:    parses probe or line data 
 
     Author		    Date		Revision

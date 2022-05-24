@@ -2,7 +2,7 @@
 '''
     Date:   04/09/2022
     Author: Martin E. Liza
-    File:   parser.py
+    File:   box_parser.py
     Def:
 
     Author		    Date		Revision 
@@ -22,14 +22,6 @@ import matplotlib.pyplot as plt
 from scipy.io import FortranFile
 # Mine 
 import helper_class as helper 
-
-# Loading data 
-def data_loader(variable_in, abs_path_in): 
-    data_in = os.path.join(abs_path_in, f'{variable_in}.dat')
-    f_in = FortranFile(data_in, 'r')
-    data = f_in.read_reals(dtype=np.float64)
-    f_in.close() 
-    return data
 
 # Loading data mapping
 def data_mapping(abs_path_in):
@@ -56,20 +48,6 @@ def data_split(dict_in, nx, ny, nz, mapping_path):
             k = mapping[n][2] 
             dict_out[key][i][j][k] = dict_in[key][n] 
     return dict_out
-
-# Save data as pickle and loads data as a pickle 
-def pickle_manager(pickle_name, pickle_path, data_in=None):
-    # Loads pickle file 
-    if data_in is None:  
-        file_in   = os.path.join(f'{pickle_path}',f'{pickle_name}.pickle') 
-        pickle_in = open(file_in, 'rb')
-        return pickle.load(pickle_in)
-    # Creates pickle file  
-    else:
-        file_out   = os.path.join(f'{pickle_path}',f'{pickle_name}.pickle') 
-        pickle_out = open(file_out, 'wb') 
-        pickle.dump(data_in, pickle_out)
-        pickle_out.close() 
 
 
 # Plot line for 2 variables  

@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import IPython
 import os 
 # From my baseAnalysis class 
-from baseAnalysis import Base_Analysis
+from base_analysis import Base_Analysis
 
 # Line Class
 class Line(Base_Analysis): 
