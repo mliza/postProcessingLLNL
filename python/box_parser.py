@@ -151,7 +151,7 @@ if __name__ =="__main__":
     path_in      = '../../plate_data/data_12'
     path_temp    = os.path.join(path_in, 'temp_data')
     path_pickle  = os.path.join(path_in, 'pickle')
-    writing_flag = False  
+    writing_flag = False   
     nx     = 5#1359  #32
     ny     = 3#89    #18
     nz     = 2#638   #16
