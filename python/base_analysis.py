@@ -63,13 +63,11 @@ class Base_Analysis:
 
 # Adds a new variable 
     def add_new_variable(self, dataset_number, new_variable_name, 
-                new_variable_data, saving_path, saving_name):
+                new_variable_data, pickle_path, pickle_save_name):
         data_total                    = self.working_data[dataset_number]
         data_total[new_variable_name] = new_variable_data 
-        tot_saving_path = os.path.join(saving_path, f'{saving_name}.pickle')
-        pickle_out      = open(tot_saving_path, 'wb') 
-        pickle.dump(self.working_data, pickle_out) 
-        pickle_out.close() 
+        helper = helper_class.Helper() 
+        helper.pickle_manager(pickle_save_name, pickle_path, data_total) 
 
 # Calculates Reynolds decomposition
     def reynolds_decomposition(self, variable):
