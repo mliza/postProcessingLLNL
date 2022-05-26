@@ -24,20 +24,19 @@ from scipy.io import FortranFile
 import helper_class as helper 
 
 # Loading data mapping
-def data_mapping(abs_path_in):
-    data_in = os.path.join(abs_path_in, 'mappingVector.dat')
+def mapping_reader(abs_path_in, N):
+    data_in  = os.path.join(abs_path_in, 'mappingVector.dat')
+    data_out = np.empty([N, 4], dtype=int) 
     f_in = FortranFile(data_in, 'r')
-    x_mapping = f_in.read_ints(dtype=np.int32) 
-    y_mapping = f_in.read_ints(dtype=np.int32)
-    z_mapping = f_in.read_ints(dtype=np.int32)
+    for n in range(N): 
+        data_out[n] = f_in.read_ints() 
     f_in.close() 
-    return [x_mapping, y_mapping, z_mapping] 
+    return data_out  
 
 # Data split (easier to implement in fortran)  
 def data_split(dict_in, nx, ny, nz, mapping_path):
     N = nx* ny* nz 
-    mapping = data_mapping(mapping_path) 
-    mapping = np.array(mapping).transpose() 
+    mapping = mapping_reader(mapping_path, N) 
     dict_out = { } 
     for key in dict_in: 
         for n in range(N): 
@@ -68,6 +67,7 @@ def plot_lineXY(data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None):
     plt.xlabel(f'{var_x}')
     plt.ylabel(f'{var_y}')
 
+
 # Plot line for 1 variable 
 def plot_line(data_in, var_y, x_dim=None, y_dim=None, z_dim=None):
     if x_dim is None:
@@ -85,12 +85,74 @@ def plot_line(data_in, var_y, x_dim=None, y_dim=None, z_dim=None):
     plt.ylabel(f'{var_y}')
 
 # For Testing
-def x_axis_test(x_grid, nx, ny, nz):   
-    for i in range(ny * nz - 1):
-        plt.plot(x_grid[i * nx:(i + 1) * nx], 'o-')   
+def plot_testing(data_in, nx, ny, nz, saving_path, val_fix=0):
+
+    # Plot Xy, fix z at 0
+    for j in range(ny):
+        plt.plot(data_in['X'][:,j,val_fix], 'o-') 
     plt.grid('-.')
-    plt.xlabel('nx [ ]')
-    plt.ylabel('X [m]')
+    plt.xlabel('Iterations')
+    plt.ylabel('X-y [m]')
+    plt.title(f'X, changing on Y at fixed Z={val_fix}') 
+    plt.savefig(f'{saving_path}/Xy_z{val_fix}.png')
+    plt.close() 
+        
+    # Plot Xz, fix y at 0
+    for k in range(nz):
+        plt.plot(data_in['X'][:,val_fix,k], 'o-') 
+    plt.grid('-.')
+    plt.xlabel('Iterations')
+    plt.ylabel('X-z [m]')
+    plt.title(f'X, changing on Z at fixed Y={val_fix}') 
+    plt.savefig(f'{saving_path}/Xz_y{val_fix}.png')
+    plt.close() 
+
+    # Plot Yx, fix z at 0
+    for i in range(nx):
+        plt.plot(data_in['Y'][i,:,val_fix], 'o-') 
+    plt.grid('-.')
+    plt.xlabel('Iterations')
+    plt.ylabel('Y-x [m]')
+    plt.title(f'Y, changing on X at fixed Z={val_fix}') 
+    plt.savefig(f'{saving_path}/Yx_z{val_fix}.png')
+    plt.close() 
+        
+    # Plot Yz, fix x at 0
+    for k in range(nz):
+        plt.plot(data_in['Y'][val_fix,:,k], 'o-') 
+    plt.grid('-.')
+    plt.xlabel('Iterations')
+    plt.ylabel('Y-z [m]')
+    plt.title(f'Y, changing on Z at fixed X={val_fix}') 
+    plt.savefig(f'{saving_path}/Yz_x{val_fix}.png')
+    plt.close() 
+
+    # Plot Zx, fix y at 0
+    for i in range(nx):
+        plt.plot(data_in['Z'][i,val_fix,:], 'o-') 
+    plt.grid('-.')
+    plt.xlabel('Iterations')
+    plt.ylabel('Z-x [m]')
+    plt.title(f'Z, changing on X at fixed Y={val_fix}') 
+    plt.savefig(f'{saving_path}/Zx_y{val_fix}.png')
+    plt.close() 
+        
+    # Plot Zy, fix x at 0
+    for j in range(ny):
+        plt.plot(data_in['Z'][val_fix,j,:], 'o-') 
+    plt.grid('-.')
+    plt.xlabel('Iterations')
+    plt.ylabel('Z-y [m]')
+    plt.title(f'Z, changing on Y at fixed X={val_fix}') 
+    plt.savefig(f'{saving_path}/Zy_x{val_fix}.png')
+    plt.close() 
+        
+        
+
+
+
+
+
 
 # Making contour plots 
 def contour(data_in, grid_x, grid_y, field, slice_cut, slice_direction,
@@ -125,14 +187,16 @@ def contour(data_in, grid_x, grid_y, field, slice_cut, slice_direction,
     
 
 if __name__ =="__main__":
-    path_in      = '../../plate_data/data_12'
+    path_in      = '../../plate_data/data_13'
     path_temp    = os.path.join(path_in, 'temp_data')
     path_pickle  = os.path.join(path_in, 'pickle')
-    writing_flag = False   
-    nx     = 5#1359  #32
-    ny     = 3#89    #18
-    nz     = 2#638   #16
+    saving_path  = os.path.join(path_in, 'results') 
+    writing_flag = True 
+    nx     = 1439 
+    ny     = 85  
+    nz     = 638 
     var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'P', 'T', 'DIL', 'RHO', 'GRADRHOMAG'] 
+    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'P', 'T', 'RHO', 'RHOE'] 
     var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'T'] 
 
     # TESTING ASCII Vs. BIN
@@ -164,9 +228,16 @@ if __name__ =="__main__":
                                  pickle_path=path_pickle)  
         data_out = helper.pickle_manager(pickle_name='data_out', 
                                  pickle_path=path_pickle)  
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=-1)
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=0)
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=10)
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=5)
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=30)
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=20)
+
         IPython.embed(colors='Linux') 
-        contour(data_out, grid_x='X', grid_y='Z', field='DIL',
-                slice_cut=1, slice_direction='y', levels=20, cmap='bwr') 
+        contour(data_out, grid_x='X', grid_y='Y', field='T',
+                slice_cut=30, slice_direction='Z', levels=500, cmap='bwr') 
         #%matplotlib auto
         plt.ion() 
         #plane_xz(data_in, nx, nz, y_val=80) 

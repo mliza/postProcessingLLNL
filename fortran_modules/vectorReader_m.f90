@@ -8,10 +8,6 @@ subroutine vector_reader(n_max, box_path, temp_path, var_in, time_step)
     character(len=50) file_in, file_out_x, file_out_y, file_out_z 
 
     ! Input output grid 
-    !file_in    = '../../plate_data/data_12/smallBOX_BIN/U.0848001.q' 
-    !file_out_x = '../../plate_data/data_12/temp_data/Ux.dat'
-    !file_out_y = '../../plate_data/data_12/temp_data/Uy.dat'
-    !file_out_z = '../../plate_data/data_12/temp_data/Uz.dat'
     file_in    = box_path//'/'//var_in//'.'//time_step//'.q'
     file_out_x = temp_path//'/'//var_in//'x.dat'
     file_out_y = temp_path//'/'//var_in//'y.dat'

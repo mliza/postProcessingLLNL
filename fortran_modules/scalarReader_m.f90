@@ -8,8 +8,6 @@ subroutine  scalar_reader(n_max, box_path, temp_path, var_in, time_step)
     character(len=50) file_in, file_out 
 
     ! Input output grid 
-    !file_in    = '../../plate_data/data_12/smallBOX_BIN/T.0848001.q'
-    !file_out   = '../../plate_data/data_12/temp_data/T.dat'
     file_in  = box_path//'/'//var_in//'.'//time_step//'.q'
     file_out = temp_path//'/'//var_in//'.dat'
 

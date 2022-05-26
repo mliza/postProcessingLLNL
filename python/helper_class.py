@@ -11,6 +11,7 @@
 '''
 import os 
 import pickle 
+import numpy as np 
 from scipy.io import FortranFile  
 from dataclasses import dataclass
 
@@ -19,10 +20,10 @@ class Helper:
     pass 
 
 # Loading unformatted fortran data  
-    def data_loader(self, variable_in, abs_path_in): 
+    def data_loader(self, variable_in, abs_path_in, d_type=float): 
         data_in = os.path.join(abs_path_in, f'{variable_in}.dat')
         f_in = FortranFile(data_in, 'r')
-        data = f_in.read_reals(dtype=np.float64)
+        data = f_in.read_reals(dtype=d_type)
         f_in.close() 
         return data
 

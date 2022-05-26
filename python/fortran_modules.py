@@ -19,16 +19,20 @@ import f_scalarReader
 import f_vectorReader
 
 # Path definitions and user inputs  
-path_in   = '../../plate_data/data_12'
+path_in   = '../../plate_data/data_13'
 path_temp = os.path.join(path_in, 'temp_data')
-path_box  = os.path.join(path_in, 'smallBOX_BIN') 
-nx        = 5
-ny        = 3
-nz        = 2 
+path_box  = os.path.join(path_in, 'BOX') 
+nx        = 1439
+ny        = 85
+nz        = 638 
 n_max     = nx * ny * nz 
+scalar    = ['P', 'T', 'RHO', 'RHOE', 'DIL', 'VORTMAG', 'GRADRHOMAG'] 
+scalar    = ['P', 'T', 'RHO', 'RHOE'] 
+time_stp  = '0851700'
 
 # Calls fortran subroutines  
 f_mapping.mapping(nx, ny, nz, path_temp) 
-f_gridReader.grid_reader(n_max, path_box, path_temp, 'T') 
-f_scalarReader.scalar_reader(n_max, path_box, path_temp, 'T', '0848001')
-f_vectorReader.vector_reader(n_max, path_box, path_temp, 'U', '0848001')
+f_gridReader.grid_reader(n_max, path_box, path_temp, 'U') 
+f_vectorReader.vector_reader(n_max, path_box, path_temp, 'U', time_stp)
+for i in scalar: 
+    f_scalarReader.scalar_reader(n_max, path_box, path_temp, i, time_stp)

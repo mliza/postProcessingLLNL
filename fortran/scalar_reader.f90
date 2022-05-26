@@ -10,7 +10,8 @@ program scalar_reader
     file_in    = '../../plate_data/data_12/smallBOX_BIN/T.0848001.q'
     file_out   = '../../plate_data/data_12/temp_data/T.dat'
 
-    print *, 'Loading: ', file_in  ! Print statement  
+    ! Loading data 
+    print *, 'Loading: ', file_in  
     open(unit=7, file=file_in, & 
          form='unformatted', access ='stream')
     read(unit=7) n_blocks  
@@ -18,7 +19,8 @@ program scalar_reader
     read(unit=7) mach_number, angle_of_attack, reynolds_number, time_step
     read(unit=7) scalar_variable  
     close(unit=7) 
-    print *, 'Saving: ', file_out ! Print statement  
+    ! Saving data 
+    print *, 'Saving: ', file_out 
     open(unit=8, file=file_out, &
          form='unformatted', action='write', status='replace')
     write(unit=8) scalar_variable 

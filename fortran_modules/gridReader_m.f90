@@ -13,10 +13,6 @@ subroutine grid_reader(n_max, box_path, temp_path, var_in)
     grid_out_x  = temp_path//'/X.dat'
     grid_out_y  = temp_path//'/Y.dat'
     grid_out_z  = temp_path//'/Z.dat'
-    !grid_in    = '../../plate_data/data_12/smallBOX_BIN/T.xyz'
-    !grid_out_x = '../../plate_data/data_12/temp_data/X.dat'
-    !grid_out_y = '../../plate_data/data_12/temp_data/Y.dat'
-    !grid_out_z = '../../plate_data/data_12/temp_data/Z.dat'
 
     ! Opening and reading file 
     print *, 'Loading: ', grid_in  ! Print statement  
