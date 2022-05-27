@@ -191,7 +191,7 @@ if __name__ =="__main__":
     path_temp    = os.path.join(path_in, 'temp_data')
     path_pickle  = os.path.join(path_in, 'pickle')
     saving_path  = os.path.join(path_in, 'results') 
-    writing_flag = True 
+    writing_flag = False  
     nx     = 1439 
     ny     = 85  
     nz     = 638 
