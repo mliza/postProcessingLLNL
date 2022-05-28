@@ -79,34 +79,15 @@ class Box(Base_Analysis):
     def jacobian_3D(self, ds, dUx, dUy, dUz): 
         [nx, ny, nz] = np.shape(ds)  
         # Initialize 
-        dxdUx  = np.empty([nx, ny, nz]) 
-        dxdUy  = np.empty([nx, ny, nz]) 
-        dxdUz  = np.empty([nx, ny, nz]) 
-        dydUx  = np.empty([nx, ny, nz]) 
-        dydUy  = np.empty([nx, ny, nz]) 
-        dydUz  = np.empty([nx, ny, nz]) 
-        dzdUx  = np.empty([nx, ny, nz]) 
-        dzdUy  = np.empty([nx, ny, nz]) 
-        dzdUz  = np.empty([nx, ny, nz]) 
-        # Calculate dUx 
-        for j in range(ny-1):
-            for k in range(nz-1):
-                dxdUx[:,j,k] = dUx[:,j,k] / ds[:,j,k] 
-                dxdUy[:,j,k] = dUy[:,j,k] / ds[:,j,k] 
-                dxdUz[:,j,k] = dUz[:,j,k] / ds[:,j,k] 
-        # Calculate dUy 
-        for i in range(nx-1):
-            for k in range(nz-1):
-                dydUx[i,:,k] = dUx[i,:,k] / ds[i,:,k] 
-                dydUy[i,:,k] = dUy[i,:,k] / ds[i,:,k]  
-                dydUz[i,:,k] = dUz[i,:,k] / ds[i,:,k] 
-        # Calculate dUz 
-        for i in range(nx-1):
-            for j in range(ny-1):
-                dzdUx[i,j,:] = dUx[i,j,:] / ds[i,j,:]  
-                dzdUy[i,j,:] = dUy[i,j,:] / ds[i,j,:]  
-                dzdUz[i,j,:] = dUz[i,j,:] / ds[i,j,:]  
+        dUx_ds = np.empty([nx, ny, nz]) 
+        dUy_ds = np.empty([nx, ny, nz]) 
+        dUz_ds = np.empty([nx, ny, nz]) 
+        # Calculate the gradients 
+        dUx_ds = dUx / ds 
+        dUy_ds = dUy / ds 
+        dUz_ds = dUz / ds 
         IPython.embed(colors = 'Linux') 
+
 '''  
         J = [ dxUx, dydUx, dzdUx,
               dxUy, dydUy, dzdUy,
