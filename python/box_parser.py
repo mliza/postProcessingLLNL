@@ -49,7 +49,8 @@ def data_split(dict_in, nx, ny, nz, mapping_path):
     return dict_out
 
 # Plot line for 2 variables  
-def plot_lineXY(data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None):
+def plot_lineXY(data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None,
+                saving_path=None):
     if x_dim is None:
         plt.plot(data_in[var_x][:, y_dim, z_dim], 
                 data_in[var_y][:, y_dim, z_dim], '-o', 
@@ -62,10 +63,18 @@ def plot_lineXY(data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None):
         plt.plot(data_in[var_x][x_dim, y_dim, :], 
                 data_in[var_y][x_dim, y_dim, :], '-o',
                 label=f'x={x_dim}, y={y_dim}')
+    # Legend, title 
     plt.grid('-.') 
     plt.legend() 
     plt.xlabel(f'{var_x}')
     plt.ylabel(f'{var_y}')
+    plt.title(f'{var_y} vs. {var_x}') 
+
+    # Saving if needed 
+    if saving_path == None:
+        plt.show() 
+    if saving_path != None:
+        plt.savefig(f'{saving_path}/{var_x}_{var_y}.png')
 
 
 # Plot line for 1 variable 
@@ -86,7 +95,6 @@ def plot_line(data_in, var_y, x_dim=None, y_dim=None, z_dim=None):
 
 # For Testing
 def plot_testing(data_in, nx, ny, nz, saving_path, val_fix=0):
-
     # Plot Xy, fix z at 0
     for j in range(ny):
         plt.plot(data_in['X'][:,j,val_fix], 'o-') 
@@ -147,11 +155,6 @@ def plot_testing(data_in, nx, ny, nz, saving_path, val_fix=0):
     plt.savefig(f'{saving_path}/Zy_x{val_fix}.png')
     plt.close() 
         
-        
-
-
-
-
 
 
 # Making contour plots 
@@ -184,31 +187,18 @@ def contour(data_in, grid_x, grid_y, field, slice_cut, slice_direction,
     plt.colorbar() 
 
     
-    
 
 if __name__ =="__main__":
-    path_in      = '../../plate_data/data_13'
+    path_in      = '../../plate_data/data_15'
     path_temp    = os.path.join(path_in, 'temp_data')
     path_pickle  = os.path.join(path_in, 'pickle')
     saving_path  = os.path.join(path_in, 'results') 
-    writing_flag = False  
+    writing_flag = False 
     nx     = 1439 
     ny     = 85  
     nz     = 638 
-    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'P', 'T', 'DIL', 'RHO', 'GRADRHOMAG'] 
-    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'P', 'T', 'RHO', 'RHOE'] 
-    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'T'] 
-
-    # TESTING ASCII Vs. BIN
-    '''
-    ascii_path   = os.path.join(path_in, 'smallBOX_ASCII') 
-    f            = open(os.path.join(ascii_path, 'T.xyz'), 'r')
-    lines        = f.read().splitlines() 
-    f.close() 
-    x_ascii      = np.fromstring(lines[2], dtype=np.longdouble, sep=' ') 
-    y_ascii      = np.fromstring(lines[3], dtype=np.longdouble, sep=' ') 
-    z_ascii      = np.fromstring(lines[4], dtype=np.longdouble, sep=' ') 
-    '''
+    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'RHO', 'P', 'T', 'DIL', 
+              'GRADRHOMAG', 'RHOE', 'VORTMAG'] 
     
     # Writing flag 
     helper = helper.Helper() 
@@ -236,6 +226,7 @@ if __name__ =="__main__":
         plot_testing(data_out, nx, ny, nz, saving_path, val_fix=20)
 
         IPython.embed(colors='Linux') 
+        plot_lineXY(data_out, 'X', 'T', y_dim=2, z_dim=8, saving_path=saving_path)
         contour(data_out, grid_x='X', grid_y='Y', field='T',
                 slice_cut=30, slice_direction='Z', levels=500, cmap='bwr') 
         #%matplotlib auto

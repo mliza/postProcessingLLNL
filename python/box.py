@@ -76,22 +76,47 @@ class Box(Base_Analysis):
 
     # Calculates the Jacobian 
     # https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant
-    def jacobian_3D(self, ds, dUx, dUy, dUz): 
-        [nx, ny, nz] = np.shape(ds)  
-        # Initialize 
-        dUx_ds = np.empty([nx, ny, nz]) 
-        dUy_ds = np.empty([nx, ny, nz]) 
-        dUz_ds = np.empty([nx, ny, nz]) 
-        # Calculate the gradients 
-        dUx_ds = dUx / ds 
-        dUy_ds = dUy / ds 
-        dUz_ds = dUz / ds 
-        IPython.embed(colors = 'Linux') 
+    def jacobian_3D(self, ds, dUx, dUy, dUz, data_in): 
+    #def jacobian_3D(self, data_in): 
+        # Loading data 
+        X  = data_in['X']
+        Y  = data_in['Y']
+        Z  = data_in['Y']
+        dUx_dx = dUx[0,0,0] / ds[0,0,0] 
+        dUy_dx = dUy[0,0,0] / ds[0,0,0] 
+        dUz_dx = dUz[0,0,0] / ds[0,0,0] 
+
+        dUx_dy = dUx[0,0,0] / ds[0,0,0] 
+        dUy_dy = dUy[0,0,0] / ds[0,0,0] 
+        dUz_dy = dUz[0,0,0] / ds[0,0,0] 
+
+        dUx_dz = dUx[0,0,0] / ds[0,0,0] 
+        dUy_dz = dUy[0,0,0] / ds[0,0,0] 
+        dUz_dz = dUz[0,0,0] / ds[0,0,0] 
+        IPython.embed(colors='Linux') 
+
+        '''
+        X  = data_in['X']
+        Y  = data_in['Y']
+        Z  = data_in['Y']
+        Ux = data_in['Ux']
+        Uy = data_in['Uy']
+        Uz = data_in['Uz']
+        # Calcualte derivatives 
+        dUx = Ux[2,0,0] - Ux[1,0,0]  
+        dUy = Uy[2,0,0] - Uy[1,0,0]  
+        dUz = Uz[2,0,0] - Uz[1,0,0]  
+        dx  = X[2,0,0] - X[1,0,0] 
+        dy  = Y[2,0,0] - Y[1,0,0] 
+        dz  = Z[2,0,0] - Z[1,0,0] 
+        '''
+
+        
 
 '''  
-        J = [ dxUx, dydUx, dzdUx,
-              dxUy, dydUy, dzdUy,
-              dxUz, dydUz, dzdUz ]
+        J = [ dUx_dx, dUx_dy, dUx_dz, 
+              dUy_dx. dUy_dy, dUy_dz,
+              dUz_dx. dUz_dy, dUz_dz ]
 '''
 
 

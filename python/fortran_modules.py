@@ -19,16 +19,15 @@ import f_scalarReader
 import f_vectorReader
 
 # Path definitions and user inputs  
-path_in   = '../../plate_data/data_13'
+path_in   = '../../plate_data/data_15'
 path_temp = os.path.join(path_in, 'temp_data')
 path_box  = os.path.join(path_in, 'BOX') 
 nx        = 1439
 ny        = 85
 nz        = 638 
 n_max     = nx * ny * nz 
-scalar    = ['P', 'T', 'RHO', 'RHOE', 'DIL', 'VORTMAG', 'GRADRHOMAG'] 
-scalar    = ['P', 'T', 'RHO', 'RHOE'] 
-time_stp  = '0851700'
+scalar    = ['DIL', 'GRADRHOMAG', 'P', 'RHO', 'RHOE', 'T', 'VORTMAG'] 
+time_stp  = '0859000'
 
 # Calls fortran subroutines  
 f_mapping.mapping(nx, ny, nz, path_temp) 
