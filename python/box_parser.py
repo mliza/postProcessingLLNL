@@ -189,16 +189,17 @@ def contour(data_in, grid_x, grid_y, field, slice_cut, slice_direction,
     
 
 if __name__ =="__main__":
-    path_in      = '../../plate_data/data_15'
+    path_in      = '../../plate_data/data_16'
     path_temp    = os.path.join(path_in, 'temp_data')
     path_pickle  = os.path.join(path_in, 'pickle')
     saving_path  = os.path.join(path_in, 'results') 
-    writing_flag = False 
+    writing_flag = False  
     nx     = 1439 
     ny     = 85  
     nz     = 638 
     var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'RHO', 'P', 'T', 'DIL', 
               'GRADRHOMAG', 'RHOE', 'VORTMAG'] 
+    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'T'] 
     
     # Writing flag 
     helper = helper.Helper() 
