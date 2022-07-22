@@ -1,4 +1,14 @@
 #!/opt/homebrew/bin/python3
+'''
+    Date:   05/24/2022
+    Author: Martin E. Liza
+    File:   main_box.py 
+    Def:    Main file to process box data. 
+
+    Author		    Date		Revision
+    ----------------------------------------------------
+    Martin E. Liza	07/22/2022	Initial version.
+'''
 import numpy as np 
 import matplotlib.pyplot as plt 
 import IPython 
