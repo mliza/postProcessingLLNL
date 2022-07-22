@@ -1,11 +1,10 @@
-#!/usr/bin/python3
+#!/opt/homebrew/bin/python3 
 '''
     Date:   04/09/2022
     Author: Martin E. Liza
     File:   box_parser.py
     Def:
-
-    Author		    Date		Revision 
+Author		    Date		Revision 
     ------------------------------------------------------------------------
     Martin E. Liza	04/09/2022	Initial version.
     Martin E. Liza  05/18/2022  Added the data_split function
@@ -14,13 +13,18 @@
     Martin E. Liza  05/20/2022  Added contour plots and some testings plots. 
 '''
 import numpy as np
-import os 
 import IPython 
 import pickle 
 import matplotlib  
 import matplotlib.pyplot as plt 
 from scipy.io import FortranFile
+import time 
 # Mine 
+import sys 
+import os 
+scripts_path   = os.environ.get('SCRIPTS')
+python_scripts = os.path.join(scripts_path, 'Python')
+sys.path.insert(1, python_scripts) 
 import helper_class as helper 
 
 # Loading data mapping
@@ -34,11 +38,12 @@ def mapping_reader(abs_path_in, N):
     return data_out  
 
 # Data split (easier to implement in fortran)  
-def data_split(dict_in, nx, ny, nz, mapping_path):
+def data_split(dict_in, nx, ny, nz, mapping):
     N = nx* ny* nz 
-    mapping = mapping_reader(mapping_path, N) 
     dict_out = { } 
     for key in dict_in: 
+        print(f'Working on {key}:')
+        start = time.time() 
         for n in range(N): 
             if n == 0:
                 dict_out[key] = np.empty([nx, ny, nz]) 
@@ -46,6 +51,9 @@ def data_split(dict_in, nx, ny, nz, mapping_path):
             j = mapping[n][1] 
             k = mapping[n][2] 
             dict_out[key][i][j][k] = dict_in[key][n] 
+        end = time.time() 
+        elapse_time = end - start
+        print(f'Ending {key}, it took {elapse_time:.4}s\n')
     return dict_out
 
 # Plot line for 2 variables  
@@ -75,6 +83,7 @@ def plot_lineXY(data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None,
         plt.show() 
     if saving_path != None:
         plt.savefig(f'{saving_path}/{var_x}_{var_y}.png')
+        plt.close() 
 
 
 # Plot line for 1 variable 
@@ -189,47 +198,68 @@ def contour(data_in, grid_x, grid_y, field, slice_cut, slice_direction,
     
 
 if __name__ =="__main__":
-    path_in      = '../../plate_data/data_16'
+    path_in      = '../../plate_data/data_11'
     path_temp    = os.path.join(path_in, 'temp_data')
     path_pickle  = os.path.join(path_in, 'pickle')
     saving_path  = os.path.join(path_in, 'results') 
-    writing_flag = False  
+    writing_flag = False   
+    mapping_flag = False  
     nx     = 1439 
     ny     = 85  
     nz     = 638 
-    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'RHO', 'P', 'T', 'DIL', 
-              'GRADRHOMAG', 'RHOE', 'VORTMAG'] 
-    var_in = ['X', 'Y', 'Z', 'Ux', 'Uy', 'Uz', 'T'] 
+    var_in = [ 'X', 'Y', 'Z', 
+               'Ux', 'Uy', 'Uz',  
+               'T', 'RHO', 'P',  
+               'RHOE', 'GRADRHOMAG',
+               'GRADV_11', 'GRADV_12', 'GRADV_13', 
+               'GRADV_21', 'GRADV_22', 'GRADV_23', 
+               'GRADV_31', 'GRADV_32', 'GRADV_33'] 
     
     # Writing flag 
     helper = helper.Helper() 
     if writing_flag: 
+        if mapping_flag: 
+            print('Starting Mapping:')
+            start = time.time() 
+            mapping = mapping_reader(path_temp, nx*ny*nz) 
+            end = time.time() 
+            elapse_time = end - start
+            print(f'Ending mapping, it took {elapse_time:.4}s\n')
+            helper.pickle_manager(pickle_name_file='mapping', pickle_path=path_pickle,
+                                 data_to_save=mapping)
+        mapping = helper.pickle_manager(pickle_name_file='mapping', 
+                    pickle_path=path_pickle) 
         dict_in = { }
         for i in var_in:
-            dict_in[i] = helper.data_loader(i, path_temp) 
-        helper.pickle_manager(pickle_name='data_in', pickle_path=path_pickle,
-                        data_in=dict_in)  
-        dict_out = data_split(dict_in, nx, ny, nz, mapping_path=path_temp)
-        helper.pickle_manager(pickle_name='data_out', pickle_path=path_pickle,
-                        data_in=dict_out)  
+            dict_in[i] = helper.fortran_data_loader(f'{i}.dat', path_temp) 
+        helper.pickle_manager(pickle_name_file='data_in', pickle_path=path_pickle,
+                        data_to_save=dict_in)  
+        dict_out = data_split(dict_in, nx, ny, nz, mapping)
+        helper.pickle_manager(pickle_name_file='data_out', pickle_path=path_pickle,
+                        data_to_save=dict_out)  
 
     # Loading flag 
     if not writing_flag:
-        data_in = helper.pickle_manager(pickle_name='data_in', 
+        data_in = helper.pickle_manager(pickle_name_file='data_in', 
                                  pickle_path=path_pickle)  
-        data_out = helper.pickle_manager(pickle_name='data_out', 
+        data_out = helper.pickle_manager(pickle_name_file='data_out', 
                                  pickle_path=path_pickle)  
-        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=-1)
-        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=0)
-        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=10)
-        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=5)
-        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=30)
-        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=20)
+        P_DIL = data_in['P'] * (data_in['GRADV_11'] + data_in['GRADV_22'] + data_in['GRADV_33']) 
+        #helper.pickle_dict_add(P_DIL, 'P_DIL', path_pickle, 'data_in', 'data_in_test') 
+        #TEST = helper.pickle_manager(pickle_name_file='data_in_test',  
+        #                         data_to_save=path_pickle)  
 
-        IPython.embed(colors='Linux') 
-        plot_lineXY(data_out, 'X', 'T', y_dim=2, z_dim=8, saving_path=saving_path)
+
+        IPython.embed(colors='Linux')
         contour(data_out, grid_x='X', grid_y='Y', field='T',
                 slice_cut=30, slice_direction='Z', levels=500, cmap='bwr') 
+        plot_testing(data_out, nx, ny, nz, saving_path, val_fix=20)
+        plot_lineXY(data_out, 'X', 'T', y_dim=2, z_dim=8, saving_path=saving_path)
+        plot_lineXY(data_out, 'T', 'Y', x_dim=2, z_dim=8, saving_path=saving_path)
+        plot_lineXY(data_out, 'X', 'Ux', y_dim=2, z_dim=8, saving_path=saving_path)
+        plot_lineXY(data_out, 'Ux', 'Y', x_dim=2, z_dim=8, saving_path=saving_path)
+        plot_lineXY(data_out, 'Ux', 'Y', x_dim=-1, z_dim=-1, saving_path=saving_path)
+        plot_lineXY(data_out, 'T', 'Y', x_dim=-1, z_dim=-1, saving_path=saving_path)
         #%matplotlib auto
         plt.ion() 
         #plane_xz(data_in, nx, nz, y_val=80) 

@@ -5,7 +5,7 @@ subroutine  scalar_reader(n_max, box_path, temp_path, var_in, time_step)
     integer, intent(in) :: n_max
     double precision, dimension(n_max) :: scalar_variable 
     character(len=*), intent(in) :: box_path, temp_path, var_in, time_step
-    character(len=50) file_in, file_out 
+    character(len=60) file_in, file_out 
 
     ! Input output grid 
     file_in  = box_path//'/'//var_in//'.'//time_step//'.q'

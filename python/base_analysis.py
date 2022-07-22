@@ -21,6 +21,7 @@
                                   consideration 2d, dataset such as line data.
     Martin E. Liza   07/21/2021   Implement vorticity_calculations. 
     Martin E. Liza   08/29/2021   Added add_new_variable. 
+    Martin E. Liza   07/16/2022   Added helper_class from SCRIPTS.  
 '''
 import os 
 import pickle
@@ -31,8 +32,14 @@ import seaborn as sb
 from scipy import integrate
 from scipy.fft import fft 
 from scipy.special import legendre 
-import helper_class  
 import IPython
+# Mine 
+import sys 
+import os 
+scripts_path = os.environ.get('SCRIPTS')
+python_scripts = os.path.join(scripts_path, 'Python') 
+sys.path.insert(1, python_scripts)
+import helper_class  
 
 class Base_Analysis:
     # Global class variables 

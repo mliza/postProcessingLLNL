@@ -1,17 +1,17 @@
 program mapping
     implicit none
     integer :: nx, ny, nz, i 
-    integer, parameter :: n_max = 30 !change me, depends on nx, ny, nz
+    integer, parameter :: n_max = 78036970 !change me, depends on nx, ny, nz
     integer, dimension(n_max, 4) :: mapping_matrix   
     character(len=53) mapping_vector 
 
     ! Change me, depends on nx, ny, nz 
-    nx = 5
-    ny = 3 
-    nz = 2
+    nx = 1439
+    ny = 85
+    nz = 638
 
     ! Output file 
-    mapping_vector = '../../plate_data/data_12/temp_data/mappingVector.dat' 
+    mapping_vector = '../../plate_data/data_10/temp_data/mappingVector.dat' 
 
     ! Write mapping for loop 
     do i = 1, n_max
@@ -22,9 +22,9 @@ program mapping
     end do
 
     ! Printing testing 
-    do i = 1, n_max
-        print *, mapping_matrix(i,:)
-    end do 
+    !do i = 1, n_max
+    !    print *, mapping_matrix(i,:)
+    !end do 
         
 
     ! Saving mapping 

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/opt/homebrew/bin/python3
 '''
     Date:   05/24/2022
     Author: Martin E. Liza
@@ -19,16 +19,19 @@ import f_scalarReader
 import f_vectorReader
 
 # Path definitions and user inputs  
-path_in   = '../../plate_data/data_16'
+path_in   = '../../plate_data/data_11'
 path_temp = os.path.join(path_in, 'temp_data')
 path_box  = os.path.join(path_in, 'BOX') 
 nx        = 1439
 ny        = 85
 nz        = 638 
 n_max     = nx * ny * nz 
-scalar    = ['DIL', 'GRADRHOMAG', 'P', 'RHO', 'RHOE', 'T', 'VORTMAG'] 
-scalar    = ['T']
-time_stp  = '0868100'
+scalar    = [ 'GRADRHOMAG', 'P', 
+              'RHO', 'RHOE', 'T', 
+              'GRADV_11', 'GRADV_12', 'GRADV_13', 
+              'GRADV_21', 'GRADV_22', 'GRADV_23',
+              'GRADV_31', 'GRADV_32', 'GRADV_33' ]
+time_stp  = '0900000'
 
 # Calls fortran subroutines  
 f_mapping.mapping(nx, ny, nz, path_temp) 
