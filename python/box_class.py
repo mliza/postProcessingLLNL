@@ -9,19 +9,17 @@
     Martin E. Liza   07/19/2022   Initial Version.
 '''
 import numpy as np 
-import IPython
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec 
-import seaborn as sb
-from dataclasses import dataclass, field  
-from scipy.io import FortranFile
+import IPython
 import sys 
 import os 
+from dataclasses import dataclass, field  
+from scipy.io import FortranFile
+# My own stuff 
 scripts_path   = os.environ.get('SCRIPTS')
 python_scripts = os.path.join(scripts_path, 'Python') 
 sys.path.append(python_scripts) 
 import helper_class as helper 
-
 
 # Probe Class 
 @dataclass 
@@ -73,15 +71,17 @@ class Box():
         dilatation =  (data_dict['GRADV_11'] + 
                       data_dict['GRADV_22'] + 
                       data_dict['GRADV_33']) 
+        enstrophy = 2 * vort_mag * vort_mag 
 
-        # Equation from donzisd (missing mu multiply results by mu)
-        disipation_solenoidal  = vort_mag**2 
-        dissipation_dilatation = 4/3 * dilatation  
-        gradient_dict = { 'vortX'     : omega_x, 
-                          'vortY'     : omega_y, 
-                          'vortZ'     : omega_z,  
-                          'vortMag'   : vort_mag,  
-                          'dilataion' : dilatation }
+        # Equation from donzis (missing mu multiply results by mu)
+        #disipation_solenoidal  = vort_mag**2 
+        #dissipation_dilatation = 4/3 * dilatation  
+        gradient_dict = { 'VortX'     : omega_x, 
+                          'Vorty'     : omega_y, 
+                          'Vortz'     : omega_z,  
+                          'VORTMAG'   : vort_mag,  
+                          'DIL'       : dilatation, 
+                          'ENSTROPHY' : enstrophy }
         return gradient_dict 
 
 # Sutherland Law

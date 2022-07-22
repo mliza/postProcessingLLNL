@@ -16,7 +16,6 @@ import sys
 import os 
 scripts_path   = os.environ.get('SCRIPTS')
 python_scripts = os.path.join(scripts_path, 'Python')
-#sys.path.insert(1, python_scripts)
 sys.path.append(python_scripts)
 sys.path.append('../fortran_modules')
 # Helper class 
@@ -42,6 +41,7 @@ fortran_flag = False
 mapping_flag = False 
 writing_flag = False 
 working_flag = True 
+add_dat_flag = False  
 scalar_in    = [ 'T', 'RHO', 'P',
                  'RHOE', 'GRADRHOMAG', 
                  'GRADV_11', 'GRADV_12', 'GRADV_13',
@@ -80,12 +80,14 @@ if writing_flag:
     for i in var_in: 
         dict_1D[i] = helper.fortran_data_loader(variable_in=f'{i}.dat',  
                                                 abs_path_in=temp_path) 
+        # Splits 1D array into a 3D array
         dict_3D[i] = box.split_plot3D(array_1D=dict_1D[i], mapping=mapping)
     # Saving 1D and 3D arrays 
     helper.pickle_manager(pickle_name_file='dict_1D', pickle_path=pickle_path,
                           data_to_save=dict_1D)
     helper.pickle_manager(pickle_name_file='dict_3D', pickle_path=pickle_path,
                           data_to_save=dict_3D)
+
 
 # Testing and playing around scripts 
 if working_flag:
@@ -96,12 +98,34 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
-    data_keys = list(data_in1D.keys()) 
 
-    grad      = box.gradient_fields(data_in3D) 
+    # Adding data to the dictionaries 
+    if add_dat_flag:
+        mu_1D         = box.sutherland_law(data_in1D['T']) 
+        grad_1D       = box.gradient_fields(data_in1D) 
+        grad_1D['MU'] = mu_1D 
+        dict_temp1D   = { }
+        dict_temp3D   = { }
+        for i in grad_1D.keys():
+            dict_temp1D[i] = grad_1D[i] 
+            dict_temp3D[i] = box.split_plot3D(array_1D=grad_1D[i], 
+                                            mapping=mapping)
+        # Add new data to dictionaries 
+        for i in dict_temp1D.keys():
+            helper.pickle_dict_add(var_in_data=dict_temp1D[i], var_in_str=i,
+                                   pickle_path=pickle_path, 
+                                   pickle_dict_in='dict_1D',
+                                   pickle_dict_out='new_dict_1D')
+            helper.pickle_dict_add(var_in_data=dict_temp1D[i], var_in_str=i,
+                                   pickle_path=pickle_path, 
+                                   pickle_dict_in='dict_3D',
+                                   pickle_dict_out='new_dict_3D')
 
 # Loading data 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='RHO', 
+                     slice_cut=20, slice_direction='Y', 
+                     levels=500, saving_path=saving_path) 
+    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='DIL', 
                      slice_cut=20, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='T', 
@@ -111,6 +135,5 @@ if working_flag:
                      slice_cut=20, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
 
-    IPython.embed(colors='Linux') 
 
 
