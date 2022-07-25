@@ -99,10 +99,13 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
+    # TESTING FUNCTIONS  
+    test = box.mean_fields(data_in3D['T'])
+    IPython.embed(colors='Linux') 
     sos = aero.speed_of_sound(data_in1D['T'])
     turb_kin = data_in1D['RHOE'] / data_in1D['RHO']
     mach_t = aero.turbulent_mach_number(turb_kin[:nx], sos[:nx])  
-    IPython.embed(colors='Linux') 
+    # TESTING FUNCTIONS  
 
     # Adding data to the dictionaries 
     if add_dat_flag:

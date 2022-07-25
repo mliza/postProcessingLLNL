@@ -1,12 +1,16 @@
 #!/usr/local/bin/python3
 '''
-    Date:   06/24/2021
+    Date:   07/25/2022
     Author: Martin E. Liza
-    File:   box_class.py Def:               
+    File:   box_class.py 
+    Def:    Functions used to post process binary 
+            box probes output by margot.
 
     Author           Date         Revision
-    ------------------------------------------------------
+    -----------------------------------------------------
     Martin E. Liza   07/19/2022   Initial Version.
+    Martin E. Liza   07/25/2022   Added mean fields and 
+                                  Reynolds decomposition.
 '''
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -63,14 +67,14 @@ class Box():
 
 # NOTE: Rename in C++ SHEAR for GRADU
 # Return a dictionary with gradient fields 
-    def gradient_fields(self, data_dict):  
-        omega_x   = 1/2 * (data_dict['GRADV_23'] - data_dict['GRADV_32'])  
-        omega_y   = 1/2 * (data_dict['GRADV_31'] - data_dict['GRADV_13']) 
-        omega_z   = 1/2 * (data_dict['GRADV_12'] - data_dict['GRADV_21']) 
+    def gradient_fields(self, array_dict_1D):  
+        omega_x   = 1/2 * (array_dict_1D['GRADV_23'] - array_dict_1D['GRADV_32'])  
+        omega_y   = 1/2 * (array_dict_1D['GRADV_31'] - array_dict_1D['GRADV_13']) 
+        omega_z   = 1/2 * (array_dict_1D['GRADV_12'] - array_dict_1D['GRADV_21']) 
         vort_mag  = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
-        dilatation =  (data_dict['GRADV_11'] + 
-                      data_dict['GRADV_22'] + 
-                      data_dict['GRADV_33']) 
+        dilatation =  (array_dict_1D['GRADV_11'] + 
+                      array_dict_1D['GRADV_22'] + 
+                      array_dict_1D['GRADV_33']) 
         enstrophy = 2 * vort_mag * vort_mag 
 
         # Equation from donzis (missing mu multiply results by mu)
@@ -84,29 +88,65 @@ class Box():
                           'ENSTROPHY' : enstrophy }
         return gradient_dict 
 
-# Calculate mean fields in a given direction
-    def mean_fields(self, data_in, given_direction):
-        if given_direction == 'x':
-            mean_field = np.empty([self.nx, self.ny]) 
+# Calculates fluctuation fields in a given 3D data set, 
+# assume frozen flow hypothesis on z, and returns a 
+# 2D field as a function of x and y.  
+    def mean_fields(self, array_3D):
+        mean_yz = np.empty([self.ny, self.nz]) 
+        mean_xz = np.empty([self.nx, self.nz]) 
+        mean_xy = np.empty([self.nx, self.ny]) 
+        mean_x  = np.empty(self.nx)
+        mean_y  = np.empty(self.ny)
+        mean_z  = np.empty(self.nz)
+        # Array y-z
+        for k in range(self.nz):
+            for j in range(self.ny):
+                mean_yz[j,k] = np.mean(array_3D[:,j,k]) 
+        # Array x-z
+        for k in range(self.nz):
             for i in range(self.nx):
-                for j in range(self.ny):
-                    mean_field[i,j] = np.mean(data_in[i,j,:])
+                mean_xz[i,k] = np.mean(array_3D[i,:,k]) 
+        # Array x-y
+        for j in range(self.ny):
+            for i in range(self.nx):
+                mean_xy[i,j] = np.mean(array_3D[i,j,:]) 
+        # Mean x 
+        for i in range(self.nx): 
+            mean_x[i] = np.mean(mean_xy[i,:])
+        # Mean y 
+        for j in range(self.ny):
+            mean_y[j] = np.mean(mean_yz[j,:])
+        # Mean z 
+        for k in range(self.nz):
+            mean_z[k] = np.mean(mean_xz[:,k])
+
+        dict_out = { 'mean_xy' : mean_xy,
+                     'mean_yz' : mean_yz,
+                     'mean_xz' : mean_xz, 
+                     'mean_x'  : mean_x,
+                     'mean_y'  : mean_y,
+                     'mean_z'  : mean_z }
+        return dict_out 
+
+# Reynolds Decomposition 
+    def reynolds_decomposition(self, array_1D):
+        decomposition_1D = array_1D - np.mean(array_1D)
+        return decomposition_1D 
             
 # Plot line for 2 variables  
-
-    def plot_lineXY(self, data_in, var_x, var_y, 
+    def plot_lineXY(self, array_dict_3D, var_x, var_y, 
                     x_dim=None, y_dim=None, z_dim=None, saving_path=None):
         if x_dim is None:
-            plt.plot(data_in[var_x][:, y_dim, z_dim], 
-                    data_in[var_y][:, y_dim, z_dim], '-o', 
+            plt.plot(array_dict_3D[var_x][:, y_dim, z_dim], 
+                    array_dict_3D[var_y][:, y_dim, z_dim], '-o', 
                     label=f'y={y_dim}, z={z_dim}')
         if y_dim is None:
-            plt.plot(data_in[var_x][x_dim, :, z_dim], 
-                    data_in[var_y][x_dim, :, z_dim], '-o',
+            plt.plot(array_dict_3D[var_x][x_dim, :, z_dim], 
+                    array_dict_3D[var_y][x_dim, :, z_dim], '-o',
                     label=f'x={x_dim}, z={z_dim}')
         if z_dim is None:
-            plt.plot(data_in[var_x][x_dim, y_dim, :], 
-                    data_in[var_y][x_dim, y_dim, :], '-o',
+            plt.plot(array_dict_3D[var_x][x_dim, y_dim, :], 
+                    array_dict_3D[var_y][x_dim, y_dim, :], '-o',
                     label=f'x={x_dim}, y={y_dim}')
         # Legend, title 
         plt.grid('-.') 
@@ -122,26 +162,26 @@ class Box():
             plt.close() 
 
 # Making contour plots 
-    def plot_contour(self, data_in, grid_x, grid_y, 
+    def plot_contour(self, array_dict_3D, grid_x, grid_y, 
                 field, slice_cut, slice_direction,
                 levels=6, cmap='inferno', saving_path=None): 
         # Create slides 
         slice_direction = slice_direction.upper() 
         if slice_direction == 'X':
-            x_plane     = data_in[grid_x][slice_cut,:,:]
-            y_plane     = data_in[grid_y][slice_cut,:,:]
-            z_plane     = data_in[field][slice_cut,:,:]
-            slice_value = data_in[slice_direction][:,-1,-1][slice_cut] 
+            x_plane     = array_dict_3D[grid_x][slice_cut,:,:]
+            y_plane     = array_dict_3D[grid_y][slice_cut,:,:]
+            z_plane     = array_dict_3D[field][slice_cut,:,:]
+            slice_value = array_dict_3D[slice_direction][:,-1,-1][slice_cut] 
         if slice_direction == 'Y':
-            x_plane     = data_in[grid_x][:,slice_cut,:]
-            y_plane     = data_in[grid_y][:,slice_cut,:]
-            z_plane     = data_in[field][:,slice_cut,:]
-            slice_value = data_in[slice_direction][-1,:,-1][slice_cut] 
+            x_plane     = array_dict_3D[grid_x][:,slice_cut,:]
+            y_plane     = array_dict_3D[grid_y][:,slice_cut,:]
+            z_plane     = array_dict_3D[field][:,slice_cut,:]
+            slice_value = array_dict_3D[slice_direction][-1,:,-1][slice_cut] 
         if slice_direction == 'Z':
-            x_plane     = data_in[grid_x][:,:,slice_cut]
-            y_plane     = data_in[grid_y][:,:,slice_cut]
-            z_plane     = data_in[field][:,:,slice_cut]
-            slice_value = data_in[slice_direction][-1,-1,:][slice_cut] 
+            x_plane     = array_dict_3D[grid_x][:,:,slice_cut]
+            y_plane     = array_dict_3D[grid_y][:,:,slice_cut]
+            z_plane     = array_dict_3D[field][:,:,slice_cut]
+            slice_value = array_dict_3D[slice_direction][-1,-1,:][slice_cut] 
         # Plotting 
         plt.contourf(x_plane, y_plane, z_plane, 
                     levels=levels, cmap=cmap)
@@ -155,14 +195,3 @@ class Box():
         if saving_path != None:
             plt.savefig(f'{saving_path}/contour{grid_x}{grid_y}_{field}.png', bbox_inches='tight', dpi=300)
             plt.close() 
-
-# Reynolds Decomposition 
-    def reynolds_decomposition(self, data_dict): 
-        u_x = data_dict['Ux']
-        u_y = data_dict['Uy']
-        u_z = data_dict['Uz']
-
-
-
-
-
