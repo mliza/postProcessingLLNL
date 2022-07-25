@@ -20,6 +20,7 @@ sys.path.append(python_scripts)
 sys.path.append('../fortran_modules')
 # Helper class 
 import helper_class as helper 
+import aerorodynamics_class as aero
 import box_class as box  
 # Fortran subroutines 
 import f_mapping
@@ -37,11 +38,11 @@ nx           = 1439
 ny           = 85
 nz           = 638 
 time_step    = '0900000'
-fortran_flag = False  
+fortran_flag = False 
 mapping_flag = False 
-writing_flag = False 
+writing_flag = False
 working_flag = True 
-add_dat_flag = False  
+add_dat_flag = False 
 scalar_in    = [ 'T', 'RHO', 'P',
                  'RHOE', 'GRADRHOMAG', 
                  'GRADV_11', 'GRADV_12', 'GRADV_13',
@@ -50,6 +51,7 @@ scalar_in    = [ 'T', 'RHO', 'P',
 
 # Loading my classes 
 helper = helper.Helper()
+aero   = aero.Aero()
 box    = box.Box(nx=nx, ny=ny, nz=nz)
 
 # Use fortran subroutines 
@@ -88,7 +90,6 @@ if writing_flag:
     helper.pickle_manager(pickle_name_file='dict_3D', pickle_path=pickle_path,
                           data_to_save=dict_3D)
 
-
 # Testing and playing around scripts 
 if working_flag:
     # Loading dictionaries 
@@ -98,34 +99,52 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
+    IPython.embed(colors='Linux') 
 
     # Adding data to the dictionaries 
     if add_dat_flag:
-        mu_1D         = box.sutherland_law(data_in1D['T']) 
-        grad_1D       = box.gradient_fields(data_in1D) 
-        grad_1D['MU'] = mu_1D 
-        dict_temp1D   = { }
-        dict_temp3D   = { }
+        grad_1D        = box.gradient_fields(data_in1D) 
+        grad_1D['MU']  = aero.sutherland_law(data_in1D['T'])
+        grad_1D['SoS'] = aero.speed_of_sound(data_in1D['T'])  
+        dict_temp1D    = { }
+        dict_temp3D    = { }
         for i in grad_1D.keys():
             dict_temp1D[i] = grad_1D[i] 
             dict_temp3D[i] = box.split_plot3D(array_1D=grad_1D[i], 
                                             mapping=mapping)
         # Add new data to dictionaries 
-        for i in dict_temp1D.keys():
-            helper.pickle_dict_add(var_in_data=dict_temp1D[i], var_in_str=i,
-                                   pickle_path=pickle_path, 
-                                   pickle_dict_in='dict_1D',
-                                   pickle_dict_out='new_dict_1D')
-            helper.pickle_dict_add(var_in_data=dict_temp1D[i], var_in_str=i,
-                                   pickle_path=pickle_path, 
-                                   pickle_dict_in='dict_3D',
-                                   pickle_dict_out='new_dict_3D')
+        for i, key in enumerate(dict_temp1D.keys()):
+            if i == 0: 
+                helper.pickle_dict_add(var_in_data=dict_temp1D[key], 
+                                       var_in_str=key,
+                                       pickle_path=pickle_path, 
+                                       pickle_dict_in='dict_1D',
+                                       pickle_dict_out='new_dict_1D')
+                helper.pickle_dict_add(var_in_data=dict_temp3D[key], 
+                                       var_in_str=key,
+                                       pickle_path=pickle_path, 
+                                       pickle_dict_in='dict_3D',
+                                       pickle_dict_out='new_dict_3D')
+            else:
+                helper.pickle_dict_add(var_in_data=dict_temp1D[key], 
+                                       var_in_str=key,
+                                       pickle_path=pickle_path, 
+                                       pickle_dict_in='new_dict_1D',
+                                       pickle_dict_out='new_dict_1D')
+                helper.pickle_dict_add(var_in_data=dict_temp3D[key], 
+                                       var_in_str=key,
+                                       pickle_path=pickle_path, 
+                                       pickle_dict_in='new_dict_3D',
+                                       pickle_dict_out='new_dict_3D')
 
 # Loading data 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='RHO', 
                      slice_cut=20, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='DIL', 
+                     slice_cut=20, slice_direction='Y', 
+                     levels=500, saving_path=saving_path) 
+    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='VORTMAG', 
                      slice_cut=20, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='T', 

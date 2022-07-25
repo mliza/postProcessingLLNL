@@ -84,16 +84,6 @@ class Box():
                           'ENSTROPHY' : enstrophy }
         return gradient_dict 
 
-# Sutherland Law
-    def sutherland_law(self, temperature_field): 
-        # https://doc.comsol.com/5.5/doc/com.comsol.help.cfd/cfd_ug_fluidflow_high_mach.08.27.html
-        mu_ref  = 1.716e-5 #[kg/ms] 
-        T_ref   = 273      #[K]
-        S_const = 111      #[K] 
-        mu = mu_ref * ( (temperature_field / T_ref)**(3/2) * ( 
-                        (T_ref + S_const) / (temperature_field + S_const) ) )
-        return mu 
-
 # Calculate mean fields in a given direction
     def mean_fields(self, data_in, given_direction):
         if given_direction == 'x':
@@ -103,6 +93,7 @@ class Box():
                     mean_field[i,j] = np.mean(data_in[i,j,:])
             
 # Plot line for 2 variables  
+
     def plot_lineXY(self, data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None,
                     saving_path=None):
         if x_dim is None:

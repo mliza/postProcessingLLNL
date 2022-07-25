@@ -26,6 +26,15 @@ subroutine vector_reader(n_max, box_path, temp_path, var_in, time_step)
     read(unit=7) y_variable
     read(unit=7) z_variable
     close(unit=7) 
+    ! TESTING ML 
+    print *,  n_blocks  
+    print *,  i_max, j_max, k_max 
+    print *,  mach_number, ang_of_attack, reynolds_number, iteration
+    print *,  x_variable 
+    print *,  y_variable 
+    print *,  z_variable 
+
+
     ! Writing the vector in 3 different files 
     ! X-vector  
     print *, 'Saving: ', file_out_x  ! Print statement  
