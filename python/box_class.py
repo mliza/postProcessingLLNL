@@ -5,7 +5,7 @@
     File:   box_class.py Def:               
 
     Author           Date         Revision
-    ----------------------------------------------------------------------- 
+    ------------------------------------------------------
     Martin E. Liza   07/19/2022   Initial Version.
 '''
 import numpy as np 
@@ -77,8 +77,8 @@ class Box():
         #disipation_solenoidal  = vort_mag**2 
         #dissipation_dilatation = 4/3 * dilatation  
         gradient_dict = { 'VortX'     : omega_x, 
-                          'Vorty'     : omega_y, 
-                          'Vortz'     : omega_z,  
+                          'VortY'     : omega_y, 
+                          'VortZ'     : omega_z,  
                           'VORTMAG'   : vort_mag,  
                           'DIL'       : dilatation, 
                           'ENSTROPHY' : enstrophy }
@@ -94,8 +94,8 @@ class Box():
             
 # Plot line for 2 variables  
 
-    def plot_lineXY(self, data_in, var_x, var_y, x_dim=None, y_dim=None, z_dim=None,
-                    saving_path=None):
+    def plot_lineXY(self, data_in, var_x, var_y, 
+                    x_dim=None, y_dim=None, z_dim=None, saving_path=None):
         if x_dim is None:
             plt.plot(data_in[var_x][:, y_dim, z_dim], 
                     data_in[var_y][:, y_dim, z_dim], '-o', 
@@ -155,10 +155,6 @@ class Box():
         if saving_path != None:
             plt.savefig(f'{saving_path}/contour{grid_x}{grid_y}_{field}.png', bbox_inches='tight', dpi=300)
             plt.close() 
-
-
-
-
 
 # Reynolds Decomposition 
     def reynolds_decomposition(self, data_dict): 

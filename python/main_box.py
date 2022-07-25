@@ -20,7 +20,7 @@ sys.path.append(python_scripts)
 sys.path.append('../fortran_modules')
 # Helper class 
 import helper_class as helper 
-import aerorodynamics_class as aero
+import aerodynamics_class as aero
 import box_class as box  
 # Fortran subroutines 
 import f_mapping
@@ -99,6 +99,9 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
+    sos = aero.speed_of_sound(data_in1D['T'])
+    turb_kin = data_in1D['RHOE'] / data_in1D['RHO']
+    mach_t = aero.turbulent_mach_number(turb_kin[:nx], sos[:nx])  
     IPython.embed(colors='Linux') 
 
     # Adding data to the dictionaries 
