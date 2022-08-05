@@ -19,6 +19,7 @@ subroutine  scalar_reader(n_max, box_path, temp_path, var_in, time_step)
     read(unit=7) mach_number, ang_of_attack, reynolds_number, iteration
     read(unit=7) scalar_variable  
     close(unit=7) 
+
     print *, 'Saving: ', file_out ! Print statement  
     open(unit=8, file=file_out, &
          form='unformatted', action='write', status='replace')

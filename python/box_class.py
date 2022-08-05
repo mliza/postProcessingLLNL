@@ -68,11 +68,14 @@ class Box():
 # NOTE: Rename in C++ SHEAR for GRADU
 # Return a dictionary with gradient fields 
     def gradient_fields(self, array_dict_1D):  
-        omega_x   = 1/2 * (array_dict_1D['GRADV_23'] - array_dict_1D['GRADV_32'])  
-        omega_y   = 1/2 * (array_dict_1D['GRADV_31'] - array_dict_1D['GRADV_13']) 
-        omega_z   = 1/2 * (array_dict_1D['GRADV_12'] - array_dict_1D['GRADV_21']) 
-        vort_mag  = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
-        dilatation =  (array_dict_1D['GRADV_11'] + 
+        omega_x    = 1/2 * (array_dict_1D['GRADV_23'] - 
+                            array_dict_1D['GRADV_32'])  
+        omega_y    = 1/2 * (array_dict_1D['GRADV_31'] - 
+                            array_dict_1D['GRADV_13']) 
+        omega_z    = 1/2 * (array_dict_1D['GRADV_12'] - 
+                            array_dict_1D['GRADV_21']) 
+        vort_mag   = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
+        dilatation = (array_dict_1D['GRADV_11'] + 
                       array_dict_1D['GRADV_22'] + 
                       array_dict_1D['GRADV_33']) 
         enstrophy = 2 * vort_mag * vort_mag 
@@ -87,6 +90,26 @@ class Box():
                           'DIL'       : dilatation, 
                           'ENSTROPHY' : enstrophy }
         return gradient_dict 
+
+# Boundary layer thickness
+    def boundary_layer_thickness(self, array_field3D, array_height3D,
+                                freestream_value):
+        boundary_plane_dict = { }
+        temp_field  = np.empty([self.nx, self.nz]) 
+        temp_height = np.empty([self.nx, self.nz]) 
+        cut_value   = 0.99 * freestream_value 
+        IPython.embed(colors= 'Linux') 
+        # Find positions at 0.99 freestream 
+        for i in range(self.nx):
+            for k in range(self.nz): 
+                abs_min = np.abs(array_field3D[i,:,k] / cut_value)
+                indx    = np.where(abs_min == np.max(abs_min))[0][0] 
+                temp_field[i,k]  = array_field3D[i,:,k][indx] 
+                temp_height[i,k] = array_height3D[i,:,k][indx] 
+
+        boundary_plane_dict['field']     = temp_field 
+        boundary_plane_dict['thickness'] = temp_height
+        return boundary_plane_dict 
 
 # Calculates fluctuation fields in a given 3D data set, 
 # assume frozen flow hypothesis on z, and returns a 
@@ -132,23 +155,37 @@ class Box():
     def reynolds_decomposition(self, array_1D):
         decomposition_1D = array_1D - np.mean(array_1D)
         return decomposition_1D 
+
+# Plot boundary surface 
+    def plot_boundary_surface(self, boundary_plane_dict, 
+                              grid_mean_dict):  
+        X,Y   = np.meshgrid(grid_mean_dict['mean_z'],
+                            grid_mean_dict['mean_x']) 
+        height = boundary_plane_dict['thickness']
+        IPython.embed(colors='Linux') 
+        #fig = plt.figure(figsize=(8,8))
+        fig = plt.figure()
+        ax  = fig.add_subplot(111, projection='3d') 
+        ax.plot_surface(X, Y, height) 
             
 # Plot line for 2 variables  
     def plot_lineXY(self, array_dict_3D, var_x, var_y, 
                     x_dim=None, y_dim=None, z_dim=None, saving_path=None):
         if x_dim is None:
-            plt.plot(array_dict_3D[var_x][:, y_dim, z_dim], 
-                    array_dict_3D[var_y][:, y_dim, z_dim], '-o', 
-                    label=f'y={y_dim}, z={z_dim}')
+            x_axis    = array_dict_3D[var_x][:, y_dim, z_dim] 
+            y_axis    = array_dict_3D[var_y][:, y_dim, z_dim] 
+            label_str = f'y={y_dim}, z={y_dim}'
         if y_dim is None:
-            plt.plot(array_dict_3D[var_x][x_dim, :, z_dim], 
-                    array_dict_3D[var_y][x_dim, :, z_dim], '-o',
-                    label=f'x={x_dim}, z={z_dim}')
+            x_axis    = array_dict_3D[var_x][x_dim, :, z_dim] 
+            y_axis    = array_dict_3D[var_y][x_dim, :, z_dim] 
+            label_str = f'x={x_dim}, z={y_dim}'
         if z_dim is None:
-            plt.plot(array_dict_3D[var_x][x_dim, y_dim, :], 
-                    array_dict_3D[var_y][x_dim, y_dim, :], '-o',
-                    label=f'x={x_dim}, y={y_dim}')
+            x_axis    = array_dict_3D[var_x][x_dim, y_dim, :] 
+            y_axis    = array_dict_3D[var_y][x_dim, y_dim, :]
+            label_str = f'x={x_dim}, z={y_dim}'
         # Legend, title 
+        plt.plot(x_axis, y_axis, color='k',  linestyle='-', linewidth=3,
+                 label=label_str) 
         plt.grid('-.') 
         plt.legend() 
         plt.xlabel(f'{var_x}')
@@ -185,6 +222,7 @@ class Box():
         # Plotting 
         plt.contourf(x_plane, y_plane, z_plane, 
                     levels=levels, cmap=cmap)
+
         plt.xlabel(f'{grid_x} [m]')
         plt.ylabel(f'{grid_y} [m]')
         plt.title(f'{field}, at {slice_direction}={slice_value:.3E} [m]') 

@@ -29,20 +29,25 @@ import f_scalarReader
 import f_vectorReader
 
 # User Inputs 
-data_path    = '../../plate_data/data_11'
+data_path    = '../../plate_data/data_14'
 pickle_path  = os.path.join(data_path, 'pickle')
 temp_path    = os.path.join(data_path, 'temp_data')  
 box_path     = os.path.join(data_path, 'BOX')  
 saving_path  = '/Users/martin/Desktop/results'
+saving_path  = os.path.join(data_path, 'results') 
 nx           = 1439
 ny           = 85
 nz           = 638 
-time_step    = '0900000'
-fortran_flag = False 
+time_step    = '0910000'
+U_init       = 3000     #[m/s] 
+T_init       = 216.66   #[K] 
+RHO_init     = 0.18874  #[kg/m3] 
+P_init       = 11737    #[Pa] 
+fortran_flag = False  
 mapping_flag = False 
-writing_flag = False
-working_flag = True 
-add_dat_flag = False 
+writing_flag = False  
+working_flag = True  
+add_dat_flag = False  
 scalar_in    = [ 'T', 'RHO', 'P',
                  'RHOE', 'GRADRHOMAG', 
                  'GRADV_11', 'GRADV_12', 'GRADV_13',
@@ -53,6 +58,19 @@ scalar_in    = [ 'T', 'RHO', 'P',
 helper = helper.Helper()
 aero   = aero.Aero()
 box    = box.Box(nx=nx, ny=ny, nz=nz)
+
+# Calculate freestream conditions 
+sos_init     = aero.speed_of_sound(T_init) 
+mu_init      = aero.sutherland_law(T_init) 
+mach_init    = U_init / sos_init 
+normal_dict  = aero.normal_shock_relations(mach_init) 
+oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=40)  
+
+# Downstream properties, assumes a normal shock wave  
+T_2    = T_init * oblique_dict['T_ratio'] #[K]
+sos_2  = aero.speed_of_sound(T_2)         #[m/s]
+U_2    = oblique_dict['mach_2'] * sos_2   #[m/s]
+IPython.embed(colors = 'Linux') 
 
 # Use fortran subroutines 
 if fortran_flag:
@@ -99,13 +117,30 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
-    # TESTING FUNCTIONS  
-    test = box.mean_fields(data_in3D['T'])
-    IPython.embed(colors='Linux') 
+    # Calculating mean fields 
+    x_mean = box.mean_fields(data_in3D['X'])['mean_x']
+    y_mean = box.mean_fields(data_in3D['Y'])['mean_y']
+    z_mean = box.mean_fields(data_in3D['Z'])['mean_z'] 
+    mean_position_dict = {'mean_x' : x_mean, 
+                          'mean_y' : y_mean, 
+                          'mean_z' : z_mean} 
+    # Calculate boundary layer thickness planes 
+    temperature_plane_dict = box.boundary_layer_thickness(data_in3D['T'], 
+                                                          data_in3D['Y'],
+                                                    freestream_value=T_2)
+    velocity_plane_dict    = box.boundary_layer_thickness(data_in3D['Ux'], 
+                                                          data_in3D['Y'],
+                                                    freestream_value=U_2)
+    # Plot boundary layer planes 
+    box.plot_boundary_surface(temperature_plane_dict, mean_position_dict)
+    box.plot_boundary_surface(velocity_plane_dict, mean_position_dict)
+
+    '''
     sos = aero.speed_of_sound(data_in1D['T'])
     turb_kin = data_in1D['RHOE'] / data_in1D['RHO']
     mach_t = aero.turbulent_mach_number(turb_kin[:nx], sos[:nx])  
     # TESTING FUNCTIONS  
+    '''
 
     # Adding data to the dictionaries 
     if add_dat_flag:
@@ -144,21 +179,24 @@ if working_flag:
                                        pickle_dict_out='new_dict_3D')
 
 # Loading data 
+    box.plot_lineXY(data_in3D, 'Ux', 'Y', x_dim=700, z_dim=300, 
+                    saving_path=saving_path) 
+    box.plot_lineXY(data_in3D, 'Uy', 'Y', x_dim=700, z_dim=300, 
+                    saving_path=saving_path) 
+    box.plot_lineXY(data_in3D, 'Z', 'Uz', x_dim=700, y_dim=40, 
+                    saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='RHO', 
-                     slice_cut=20, slice_direction='Y', 
+                     slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='DIL', 
-                     slice_cut=20, slice_direction='Y', 
+                     slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='VORTMAG', 
-                     slice_cut=20, slice_direction='Y', 
+                     slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='T', 
-                     slice_cut=20, slice_direction='Y', 
+                     slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='Ux', 
-                     slice_cut=20, slice_direction='Y', 
+                     slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
-
-
-
