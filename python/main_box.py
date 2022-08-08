@@ -64,13 +64,14 @@ sos_init     = aero.speed_of_sound(T_init)
 mu_init      = aero.sutherland_law(T_init) 
 mach_init    = U_init / sos_init 
 normal_dict  = aero.normal_shock_relations(mach_init) 
-oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=40)  
+oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=45)  
 
 # Downstream properties, assumes a normal shock wave  
-T_2    = T_init * oblique_dict['T_ratio'] #[K]
-sos_2  = aero.speed_of_sound(T_2)         #[m/s]
-U_2    = oblique_dict['mach_2'] * sos_2   #[m/s]
-IPython.embed(colors = 'Linux') 
+T_2   = T_init * oblique_dict['T_ratio'] #[K]
+sos_2 = aero.speed_of_sound(T_2)         #[m/s]
+U_2   = oblique_dict['mach_2'] * sos_2   #[m/s]
+#T_2   = 2111.000
+#U_2   = 2600.000
 
 # Use fortran subroutines 
 if fortran_flag:
@@ -132,15 +133,13 @@ if working_flag:
                                                           data_in3D['Y'],
                                                     freestream_value=U_2)
     # Plot boundary layer planes 
-    box.plot_boundary_surface(temperature_plane_dict, mean_position_dict)
-    box.plot_boundary_surface(velocity_plane_dict, mean_position_dict)
-
-    '''
-    sos = aero.speed_of_sound(data_in1D['T'])
-    turb_kin = data_in1D['RHOE'] / data_in1D['RHO']
-    mach_t = aero.turbulent_mach_number(turb_kin[:nx], sos[:nx])  
-    # TESTING FUNCTIONS  
-    '''
+    #box.plot_boundary_surface(temperature_plane_dict, mean_position_dict)
+    #box.plot_boundary_surface(velocity_plane_dict, mean_position_dict)
+    box.plot_boundary_layers(velocity_plane_dict, temperature_plane_dict,
+                             mean_position_dict, velocity_freestream=U_2,
+                             temperature_freestream=T_2,
+                             saving_path=saving_path) 
+    IPython.embed(colors = 'Linux')
 
     # Adding data to the dictionaries 
     if add_dat_flag:
@@ -178,7 +177,7 @@ if working_flag:
                                        pickle_dict_in='new_dict_3D',
                                        pickle_dict_out='new_dict_3D')
 
-# Loading data 
+    # Generate plots  
     box.plot_lineXY(data_in3D, 'Ux', 'Y', x_dim=700, z_dim=300, 
                     saving_path=saving_path) 
     box.plot_lineXY(data_in3D, 'Uy', 'Y', x_dim=700, z_dim=300, 

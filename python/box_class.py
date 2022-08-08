@@ -19,6 +19,7 @@ import sys
 import os 
 from dataclasses import dataclass, field  
 from scipy.io import FortranFile
+from scipy.optimize import curve_fit 
 # My own stuff 
 scripts_path   = os.environ.get('SCRIPTS')
 python_scripts = os.path.join(scripts_path, 'Python') 
@@ -98,17 +99,23 @@ class Box():
         temp_field  = np.empty([self.nx, self.nz]) 
         temp_height = np.empty([self.nx, self.nz]) 
         cut_value   = 0.99 * freestream_value 
-        IPython.embed(colors= 'Linux') 
         # Find positions at 0.99 freestream 
         for i in range(self.nx):
             for k in range(self.nz): 
-                abs_min = np.abs(array_field3D[i,:,k] / cut_value)
-                indx    = np.where(abs_min == np.max(abs_min))[0][0] 
+                indx             = np.abs(array_field3D[i,:,k] - 
+                                          cut_value).argmin() 
                 temp_field[i,k]  = array_field3D[i,:,k][indx] 
                 temp_height[i,k] = array_height3D[i,:,k][indx] 
+        # Calculate the mean (compress on z, assume frozen flow)  
+        temp_mean_height = np.empty(self.nx)
+        for i in range(self.nx):
+            temp_mean_height[i] = np.mean(temp_height[i,:])
+        # Dictionary to return 
+        boundary_plane_dict['field']          = temp_field 
+        boundary_plane_dict['thickness']      = temp_height
+        boundary_plane_dict['mean_thickness'] = temp_mean_height
+        boundary_plane_dict['mean_field']     = self.mean_fields(array_field3D)['mean_y'] 
 
-        boundary_plane_dict['field']     = temp_field 
-        boundary_plane_dict['thickness'] = temp_height
         return boundary_plane_dict 
 
 # Calculates fluctuation fields in a given 3D data set, 
@@ -155,13 +162,76 @@ class Box():
     def reynolds_decomposition(self, array_1D):
         decomposition_1D = array_1D - np.mean(array_1D)
         return decomposition_1D 
+# Fitting function
+    def smoothing_function(self, data_in, box_pts):
+        box         = np.ones(box_pts)/box_pts 
+        data_smooth = np.convolve(data_in, box, mode='same')
+        return data_smooth 
+
+# Plot boundary Layers 
+    def plot_boundary_layers(self, velocity_boundary_dict, 
+            temperature_boundary_dict, grid_mean_dict, 
+            velocity_freestream, temperature_freestream,
+            saving_path=None):
+        # Loading variables 
+        n_box           = 50  
+        temp_mean_thick = temperature_boundary_dict['mean_thickness'] * 10**3
+        vel_mean_thick  = velocity_boundary_dict['mean_thickness'] * 10**3
+        temp_mean_field = temperature_boundary_dict['mean_field'] 
+        vel_mean_field  = velocity_boundary_dict['mean_field'] 
+        x_mean          = grid_mean_dict['mean_x'] * 10**2
+        y_mean          = grid_mean_dict['mean_y'] * 10**3
+        v_color         = 'mediumturquoise' 
+        t_color         = 'darkorange'
+        temp_smooth     = self.smoothing_function(temp_mean_thick, n_box) 
+        vel_smooth      = self.smoothing_function(vel_mean_thick, n_box) 
+        n_box           /= 2
+        n_box           = int(n_box) 
+        # Plotting figures  
+        fig, (ax1, ax2) = plt.subplots(1,2, figsize=(8,5))
+        # Plot thickness 
+        ax1.plot(x_mean, vel_mean_thick, 'o', markersize=3,
+                markerfacecolor='lightgrey', markeredgecolor='k') 
+        ax1.plot(x_mean[n_box:-n_box], vel_smooth[n_box:-n_box], color=v_color, 
+                 linestyle='-', linewidth=1.5, label='Ux')
+        ax1.plot(x_mean, temp_mean_thick, 'o', markersize=3, 
+                markerfacecolor='lightgrey', markeredgecolor='k')
+        ax1.plot(x_mean[n_box:-n_box], temp_smooth[n_box:-n_box], color=t_color, 
+                 linestyle='-', linewidth=1.5, label='T') 
+        ax1.legend()
+        ax1.set_ylabel('y-axis [mm]')
+        ax1.set_xlabel('x-axis [cm]')
+        ax1.grid('-.') 
+        ax1.legend() 
+        # Plot value 
+        l1 = ax2.plot(vel_mean_field, y_mean, color=v_color, 
+                linestyle='-', linewidth=3, label=f'Ux={velocity_freestream:.2f}[m/s]')
+        ax2.set_xlabel('Ux [m/s]', color=v_color)
+        ax21 = ax2.twiny() 
+        l2 = ax21.plot(temp_mean_field, y_mean, color=t_color, 
+                linestyle='-', linewidth=3, label=f'T={temperature_freestream:.2f}[K]')
+        ax21.set_xlabel('T [K]', color=t_color)
+        ax2.set_ylabel('y-axis [mm]')
+        ax2.grid('-.') 
+        ax2.legend(handles=l1+l2, loc='upper center') 
+        
+        if saving_path == None:
+            plt.show() 
+        if saving_path != None:
+            fig.tight_layout()
+            fig.savefig(f'{saving_path}/boundary_layers.png', dpi=300)
+            plt.close() 
 
 # Plot boundary surface 
     def plot_boundary_surface(self, boundary_plane_dict, 
                               grid_mean_dict):  
-        X,Y   = np.meshgrid(grid_mean_dict['mean_z'],
-                            grid_mean_dict['mean_x']) 
-        height = boundary_plane_dict['thickness']
+        # Loading data 
+        X_mean        = grid_mean_dict['mean_x'] 
+        Z_mean        = grid_mean_dict['mean_z'] 
+        height        = boundary_plane_dict['thickness']
+        boundary_mean = boundary_plane_dict['mean_thickness']  
+        X,Y           = np.meshgrid(Z_mean, X_mean)
+
         IPython.embed(colors='Linux') 
         #fig = plt.figure(figsize=(8,8))
         fig = plt.figure()
@@ -195,7 +265,7 @@ class Box():
         if saving_path == None:
             plt.show() 
         if saving_path != None:
-            plt.savefig(f'{saving_path}/{var_x}_{var_y}.png')
+            plt.savefig(f'{saving_path}/{var_x}_{var_y}.png', dpi=300)
             plt.close() 
 
 # Making contour plots 
@@ -231,5 +301,6 @@ class Box():
         if saving_path == None:
             plt.show() 
         if saving_path != None:
-            plt.savefig(f'{saving_path}/contour{grid_x}{grid_y}_{field}.png', bbox_inches='tight', dpi=300)
+            plt.savefig(f'{saving_path}/contour{grid_x}{grid_y}_{field}.png', 
+                            bbox_inches='tight', dpi=300)
             plt.close() 
