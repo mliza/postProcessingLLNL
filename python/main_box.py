@@ -29,25 +29,26 @@ import f_scalarReader
 import f_vectorReader
 
 # User Inputs 
-data_path    = '../../plate_data/data_14'
+data_path    = '../../plate_data/data_15'
 pickle_path  = os.path.join(data_path, 'pickle')
 temp_path    = os.path.join(data_path, 'temp_data')  
 box_path     = os.path.join(data_path, 'BOX')  
 saving_path  = '/Users/martin/Desktop/results'
 saving_path  = os.path.join(data_path, 'results') 
 nx           = 1439
-ny           = 85
+ny           = 89
 nz           = 638 
-time_step    = '0910000'
+time_step    = '0930000'
 U_init       = 3000     #[m/s] 
 T_init       = 216.66   #[K] 
 RHO_init     = 0.18874  #[kg/m3] 
 P_init       = 11737    #[Pa] 
 fortran_flag = False  
-mapping_flag = False 
-writing_flag = False  
+mapping_flag = False  
+writing_flag = False   
 working_flag = True  
-add_dat_flag = False  
+add_dat_flag = True  
+fluct_flag   = False      
 scalar_in    = [ 'T', 'RHO', 'P',
                  'RHOE', 'GRADRHOMAG', 
                  'GRADV_11', 'GRADV_12', 'GRADV_13',
@@ -70,8 +71,6 @@ oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=45)
 T_2   = T_init * oblique_dict['T_ratio'] #[K]
 sos_2 = aero.speed_of_sound(T_2)         #[m/s]
 U_2   = oblique_dict['mach_2'] * sos_2   #[m/s]
-#T_2   = 2111.000
-#U_2   = 2600.000
 
 # Use fortran subroutines 
 if fortran_flag:
@@ -118,6 +117,13 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
+    # Only loads after data is being proceed 
+    if not fluct_flag and not add_dat_flag:
+        fluct_1D  = helper.pickle_manager(pickle_name_file='fluctuations_dict_1D', 
+                                      pickle_path=pickle_path)
+        fluct_3D  = helper.pickle_manager(pickle_name_file='fluctuations_dict_3D', 
+                                      pickle_path=pickle_path)
+
     # Calculating mean fields 
     x_mean = box.mean_fields(data_in3D['X'])['mean_x']
     y_mean = box.mean_fields(data_in3D['Y'])['mean_y']
@@ -133,19 +139,19 @@ if working_flag:
                                                           data_in3D['Y'],
                                                     freestream_value=U_2)
     # Plot boundary layer planes 
-    #box.plot_boundary_surface(temperature_plane_dict, mean_position_dict)
-    #box.plot_boundary_surface(velocity_plane_dict, mean_position_dict)
     box.plot_boundary_layers(velocity_plane_dict, temperature_plane_dict,
                              mean_position_dict, velocity_freestream=U_2,
                              temperature_freestream=T_2,
                              saving_path=saving_path) 
-    IPython.embed(colors = 'Linux')
+    #box.wall_shear_stress(velocity_plane_dict, mean_position_dict) 
+
 
     # Adding data to the dictionaries 
     if add_dat_flag:
         grad_1D        = box.gradient_fields(data_in1D) 
         grad_1D['MU']  = aero.sutherland_law(data_in1D['T'])
         grad_1D['SoS'] = aero.speed_of_sound(data_in1D['T'])  
+        grad_1D['M']   = grad_1D['UMAG'] / grad_1D['SoS']  
         dict_temp1D    = { }
         dict_temp3D    = { }
         for i in grad_1D.keys():
@@ -177,6 +183,52 @@ if working_flag:
                                        pickle_dict_in='new_dict_3D',
                                        pickle_dict_out='new_dict_3D')
 
+    # Fluctuations 
+    if fluct_flag:
+        # Key values 
+        keys = list(data_in1D.keys()) 
+        keys.remove('X')
+        keys.remove('Y')
+        keys.remove('Z') 
+        keys.remove('SoS')
+        keys.remove('M')
+        fluctuations_1D = { } 
+        fluctuations_3D = { } 
+        # Calculate Reynolds decomposition 
+        for i in keys:
+            temp_1D            = box.reynolds_decomposition(data_in1D[i]) 
+            fluctuations_1D[i] = temp_1D
+            fluctuations_3D[i] = box.split_plot3D(array_1D=temp_1D, 
+                                                 mapping=mapping)
+        # Turbulent Kinetic Energy 
+        turb_k1D = (0.5 * (fluctuations_1D['Ux']**2 + 
+                           fluctuations_1D['Uy']**2 + 
+                           fluctuations_1D['Uz']**2)) 
+        mach_t1D = np.sqrt(2 * turb_k1D) / np.mean(data_in1D['SoS'])  
+
+        fluctuations_1D['K']  = turb_k1D
+        fluctuations_3D['K']  = box.split_plot3D(array_1D=turb_k1D,
+                                                 mapping=mapping)
+        # Turbulent mach number 
+        fluctuations_1D['Mt'] = mach_t1D
+        fluctuations_3D['Mt'] = box.split_plot3D(array_1D=mach_t1D,
+                                                 mapping=mapping)
+        # Reynolds stress structure parameters
+        rssp_1D                 = box.reynolds_stres_structure_parameters(
+                                  fluctuation_1D)
+        fluctuations_1D['RSSP'] = rssp_1D
+        fluctuations_3D['RSSP'] = box.split_plot3D(array_1D=rssp_1D,
+                                                 mapping=mapping)
+
+        # Saving 1D and 3D arrays 
+        helper.pickle_manager(pickle_name_file='fluctuations_dict_1D', 
+                              pickle_path=pickle_path,
+                              data_to_save=fluctuations_1D)
+        helper.pickle_manager(pickle_name_file='fluctuations_dict_3D', 
+                              pickle_path=pickle_path,
+                              data_to_save=fluctuations_3D)
+
+    '''
     # Generate plots  
     box.plot_lineXY(data_in3D, 'Ux', 'Y', x_dim=700, z_dim=300, 
                     saving_path=saving_path) 
@@ -199,3 +251,4 @@ if working_flag:
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='Ux', 
                      slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
+    '''

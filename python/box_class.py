@@ -75,7 +75,11 @@ class Box():
                             array_dict_1D['GRADV_13']) 
         omega_z    = 1/2 * (array_dict_1D['GRADV_12'] - 
                             array_dict_1D['GRADV_21']) 
+        u_x        = array_dict_1D['Ux'] 
+        u_y        = array_dict_1D['Uy'] 
+        u_z        = array_dict_1D['Uz'] 
         vort_mag   = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
+        u_mag      = np.sqrt(u_x**2 + u_y**2 + u_z**2) 
         dilatation = (array_dict_1D['GRADV_11'] + 
                       array_dict_1D['GRADV_22'] + 
                       array_dict_1D['GRADV_33']) 
@@ -89,8 +93,14 @@ class Box():
                           'VortZ'     : omega_z,  
                           'VORTMAG'   : vort_mag,  
                           'DIL'       : dilatation, 
-                          'ENSTROPHY' : enstrophy }
+                          'ENSTROPHY' : enstrophy, 
+                          'UMAG'      : u_mag}
         return gradient_dict 
+
+# Return fluctuation fields 
+    def reynolds_decomposition(self, array_field1D):
+        fluctuation = array_field1D - np.mean(array_field1D)
+        return fluctuation
 
 # Boundary layer thickness
     def boundary_layer_thickness(self, array_field3D, array_height3D,
@@ -162,6 +172,23 @@ class Box():
     def reynolds_decomposition(self, array_1D):
         decomposition_1D = array_1D - np.mean(array_1D)
         return decomposition_1D 
+
+# Reynolds stress structure parameters
+    def reynolds_stress_structure_parameters(self, fluctuation_1D):
+        u_x     = fluctuation_1D['Ux']
+        u_y     = fluctuation_1D['Uy']
+        u_z     = fluctuation_1D['Uz']
+        k       = fluctuation_1D['K'] 
+        rssp_1D = (2 * (u_x * u_y + u_y * u_z + u_x * u_z) + k) / k
+        return rssp_1D
+            
+
+# Wall shear-stress 
+    def wall_shear_stress(self, velocity_boundary_dict, grid_mean_dict):
+        y_mean = grid_mean_dict['mean_y'] 
+        u_mean = velocity_boundary_dict['mean_field'] 
+        # IPython.embed(colors='Linux') 
+
 # Fitting function
     def smoothing_function(self, data_in, box_pts):
         box         = np.ones(box_pts)/box_pts 
@@ -232,7 +259,7 @@ class Box():
         boundary_mean = boundary_plane_dict['mean_thickness']  
         X,Y           = np.meshgrid(Z_mean, X_mean)
 
-        IPython.embed(colors='Linux') 
+        #IPython.embed(colors='Linux') 
         #fig = plt.figure(figsize=(8,8))
         fig = plt.figure()
         ax  = fig.add_subplot(111, projection='3d') 
