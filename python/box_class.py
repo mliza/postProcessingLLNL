@@ -1,6 +1,6 @@
-#!/usr/local/bin/python3
+#!/opt/homebrew/bin/python3
 '''
-    Date:   07/25/2022
+    Date:   08/17/2022
     Author: Martin E. Liza
     File:   box_class.py 
     Def:    Functions used to post process binary 
@@ -11,6 +11,8 @@
     Martin E. Liza   07/19/2022   Initial Version.
     Martin E. Liza   07/25/2022   Added mean fields and 
                                   Reynolds decomposition.
+    Martin E. Liza   08/17/2022   Added edge properties, wall
+                                  properties and Van-Driest transform
 '''
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -102,31 +104,51 @@ class Box():
         fluctuation = array_field1D - np.mean(array_field1D)
         return fluctuation
 
-# Boundary layer thickness
-    def boundary_layer_thickness(self, array_field3D, array_height3D,
-                                freestream_value):
-        boundary_plane_dict = { }
-        temp_field  = np.empty([self.nx, self.nz]) 
-        temp_height = np.empty([self.nx, self.nz]) 
-        cut_value   = 0.99 * freestream_value 
+# Edge properties  
+    def edge_properties(self, array_field3D, array_height3D, freestream_value):
+        edge_dict      = { }
+        edge_field     = np.empty([self.nx, self.nz]) 
+        edge_thickness = np.empty([self.nx, self.nz]) 
+        cut_value      = 0.99 * freestream_value 
         # Find positions at 0.99 freestream 
         for i in range(self.nx):
             for k in range(self.nz): 
-                indx             = np.abs(array_field3D[i,:,k] - 
+                indx                = np.abs(array_field3D[i,:,k] - 
                                           cut_value).argmin() 
-                temp_field[i,k]  = array_field3D[i,:,k][indx] 
-                temp_height[i,k] = array_height3D[i,:,k][indx] 
+                edge_field[i,k]     = array_field3D[i,:,k][indx] 
+                edge_thickness[i,k] = array_height3D[i,:,k][indx] 
         # Calculate the mean (compress on z, assume frozen flow)  
-        temp_mean_height = np.empty(self.nx)
+        mean_edge_thickness = np.empty(self.nx)
+        mean_edge_field     = np.empty(self.nx)
         for i in range(self.nx):
-            temp_mean_height[i] = np.mean(temp_height[i,:])
+            mean_edge_thickness[i] = np.mean(edge_thickness[i,:])
+            mean_edge_field[i]     = np.mean(edge_field[i,:])
         # Dictionary to return 
-        boundary_plane_dict['field']          = temp_field 
-        boundary_plane_dict['thickness']      = temp_height
-        boundary_plane_dict['mean_thickness'] = temp_mean_height
-        boundary_plane_dict['mean_field']     = self.mean_fields(array_field3D)['mean_y'] 
+        edge_dict['edge_field']          = edge_field 
+        edge_dict['edge_thickness']      = edge_thickness 
+        edge_dict['mean_edge_thickness'] = mean_edge_thickness
+        edge_dict['mean_edge_field']     = mean_edge_field  
 
-        return boundary_plane_dict 
+        return edge_dict 
+
+# Wall properties 
+    def wall_properties(self, array_field3D, array_height3D):
+        wall_dict      = { }
+        wall_field     = array_field3D[:,0,:]  
+        wall_thickness = array_height3D[:,0,:]
+        # Calculate the mean (compress on z, assume frozen flow)  
+        mean_wall_thickness = np.empty(self.nx)
+        mean_wall_field     = np.empty(self.nx)
+        for i in range(self.nx):
+            mean_wall_thickness[i] = np.mean(wall_thickness[i,:])
+            mean_wall_field[i]     = np.mean(wall_field[i,:])
+        # Dictionary to return 
+        wall_dict['wall_field']          = wall_field 
+        wall_dict['wall_thickness']      = wall_thickness 
+        wall_dict['mean_wall_thickness'] = mean_wall_thickness
+        wall_dict['mean_wall_field']     = mean_wall_field  
+
+        return wall_dict 
 
 # Calculates fluctuation fields in a given 3D data set, 
 # assume frozen flow hypothesis on z, and returns a 
@@ -181,13 +203,63 @@ class Box():
         k       = fluctuation_1D['K'] 
         rssp_1D = (2 * (u_x * u_y + u_y * u_z + u_x * u_z) + k) / k
         return rssp_1D
-            
 
 # Wall shear-stress 
-    def wall_shear_stress(self, velocity_boundary_dict, grid_mean_dict):
-        y_mean = grid_mean_dict['mean_y'] 
-        u_mean = velocity_boundary_dict['mean_field'] 
-        # IPython.embed(colors='Linux') 
+    def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, 
+                    saving_path=None):
+        # Defining wall parameters 
+        rho_w = rho_mean['mean_xy'][:,0] 
+        mu_w  = mu_mean['mean_xy'][:,0] 
+        nu_w  = mu_w / rho_w  
+        tau_w = -mu_w * s12_mean['mean_xy'][:,0]
+        u_tau = np.sqrt(np.abs(tau_w / rho_w))  
+        # Calculate van driest transformations and returns at each x-position
+        y_plus = np.empty([self.nx, self.ny]) 
+        u_plus = np.empty([self.nx, self.ny]) 
+        mean_u_plus = np.empty(self.ny)
+        mean_y_plus = np.empty(self.ny)
+        for i in range(self.nx):
+            y_plus[i,:] = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
+            u_plus[i,:] = u_mean['mean_xy'][i,:] / u_tau[i] 
+        # Calculate mean from each x-position 
+        for i in range(self.ny): 
+            mean_y_plus[i] = np.mean(y_plus[:,i]) 
+            mean_u_plus[i] = np.mean(u_plus[:,i]) 
+
+        # Dictionary 
+        van_driest_dict = { 'y_plus'      : y_plus, 
+                            'u_plus'      : u_plus, 
+                            'mean_y_plus' : mean_y_plus, 
+                            'mean_u_plus' : mean_u_plus,  
+                            'rho_w'       : rho_w, 
+                            'mu_w'        : mu_w, 
+                            'nu_w'        : nu_w,
+                            'tau_w'       : tau_w, 
+                            'u_tau'       : u_tau }
+
+        return van_driest_dict 
+
+# Van Driest plot 
+    def plot_van_driest(self, van_driest_dict, saving_path=None): 
+        plt.plot(van_driest_dict['mean_y_plus'], 
+                 van_driest_dict['mean_u_plus'], 
+                 color='k', linestyle='-', linewidth=2) 
+        plt.plot(van_driest_dict['mean_y_plus'], 
+                 van_driest_dict['mean_u_plus'], 
+                 'o', markersize=5, markerfacecolor='lightgrey', 
+                  markeredgecolor='k')
+        plt.xscale('log')
+        plt.grid('-.')
+        plt.xlabel('$y^+$')
+        plt.ylabel('$u^+$')
+
+        # Saving 
+        if saving_path == None:
+            plt.show() 
+        if saving_path != None:
+            plt.tight_layout()
+            plt.savefig(f'{saving_path}/vanDriestTransformation.png', dpi=300)
+            plt.close() 
 
 # Fitting function
     def smoothing_function(self, data_in, box_pts):
@@ -197,15 +269,15 @@ class Box():
 
 # Plot boundary Layers 
     def plot_boundary_layers(self, velocity_boundary_dict, 
-            temperature_boundary_dict, grid_mean_dict, 
-            velocity_freestream, temperature_freestream,
+            temperature_boundary_dict, mean_velocity, mean_temperature, 
+            grid_mean_dict, velocity_freestream, temperature_freestream,
             saving_path=None):
         # Loading variables 
         n_box           = 50  
-        temp_mean_thick = temperature_boundary_dict['mean_thickness'] * 10**3
-        vel_mean_thick  = velocity_boundary_dict['mean_thickness'] * 10**3
-        temp_mean_field = temperature_boundary_dict['mean_field'] 
-        vel_mean_field  = velocity_boundary_dict['mean_field'] 
+        temp_mean_thick = temperature_boundary_dict['mean_edge_thickness'] * 10**3
+        vel_mean_thick  = velocity_boundary_dict['mean_edge_thickness'] * 10**3
+        temp_mean_field = mean_temperature 
+        vel_mean_field  = mean_velocity  
         x_mean          = grid_mean_dict['mean_x'] * 10**2
         y_mean          = grid_mean_dict['mean_y'] * 10**3
         v_color         = 'mediumturquoise' 
@@ -293,6 +365,20 @@ class Box():
             plt.show() 
         if saving_path != None:
             plt.savefig(f'{saving_path}/{var_x}_{var_y}.png', dpi=300)
+            plt.close() 
+
+# Plot mean_fields 
+    def plot_mean_fields(self, x_axis, y_axis, x_str, y_str, saving_path=None):
+        # Legend, title 
+        plt.plot(x_axis, y_axis, color='k',  linestyle='-', linewidth=3)
+        plt.grid('-.') 
+        plt.xlabel(f'{x_str}')
+        plt.ylabel(f'{y_str}')
+        # Saving if needed 
+        if saving_path == None:
+            plt.show() 
+        if saving_path != None:
+            plt.savefig(f'{saving_path}/{x_str}_{y_str}.png', dpi=300)
             plt.close() 
 
 # Making contour plots 

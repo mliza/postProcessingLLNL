@@ -47,8 +47,8 @@ fortran_flag = False
 mapping_flag = False  
 writing_flag = False   
 working_flag = True  
-add_dat_flag = True  
-fluct_flag   = False      
+add_dat_flag = False 
+fluct_flag   = False  
 scalar_in    = [ 'T', 'RHO', 'P',
                  'RHOE', 'GRADRHOMAG', 
                  'GRADV_11', 'GRADV_12', 'GRADV_13',
@@ -68,9 +68,10 @@ normal_dict  = aero.normal_shock_relations(mach_init)
 oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=45)  
 
 # Downstream properties, assumes a normal shock wave  
-T_2   = T_init * oblique_dict['T_ratio'] #[K]
-sos_2 = aero.speed_of_sound(T_2)         #[m/s]
-U_2   = oblique_dict['mach_2'] * sos_2   #[m/s]
+T_2   = T_init * oblique_dict['T_ratio']      #[K]
+sos_2 = aero.speed_of_sound(T_2)              #[m/s]
+U_2   = oblique_dict['mach_2'] * sos_2        #[m/s]
+Rho_2 = RHO_init * oblique_dict['Rho_ratio']  #[kg/m3] 
 
 # Use fortran subroutines 
 if fortran_flag:
@@ -125,26 +126,42 @@ if working_flag:
                                       pickle_path=pickle_path)
 
     # Calculating mean fields 
-    x_mean = box.mean_fields(data_in3D['X'])['mean_x']
-    y_mean = box.mean_fields(data_in3D['Y'])['mean_y']
-    z_mean = box.mean_fields(data_in3D['Z'])['mean_z'] 
-    mean_position_dict = {'mean_x' : x_mean, 
-                          'mean_y' : y_mean, 
-                          'mean_z' : z_mean} 
+    x_mean   = box.mean_fields(data_in3D['X'])
+    y_mean   = box.mean_fields(data_in3D['Y'])
+    z_mean   = box.mean_fields(data_in3D['Z']) 
+    u_mean   = box.mean_fields(data_in3D['Ux'])
+    T_mean   = box.mean_fields(data_in3D['T'])
+    mu_mean  = box.mean_fields(data_in3D['MU'])
+    rho_mean = box.mean_fields(data_in3D['RHO'])
+    s12_mean = box.mean_fields(data_in3D['GRADV_12'])
+
+    mean_position_dict = {'mean_x' : x_mean['mean_x'], 
+                          'mean_y' : y_mean['mean_y'], 
+                          'mean_z' : z_mean['mean_z']} 
+
+    van_driest = box.van_driest(s12_mean, u_mean, y_mean, rho_mean, mu_mean)  
+    box.plot_van_driest(van_driest, saving_path=saving_path)
+
+
     # Calculate boundary layer thickness planes 
-    temperature_plane_dict = box.boundary_layer_thickness(data_in3D['T'], 
-                                                          data_in3D['Y'],
-                                                    freestream_value=T_2)
-    velocity_plane_dict    = box.boundary_layer_thickness(data_in3D['Ux'], 
-                                                          data_in3D['Y'],
-                                                    freestream_value=U_2)
+    temperature_edge = box.edge_properties(data_in3D['T'], data_in3D['Y'],
+                                           freestream_value=T_2)
+    density_edge     = box.edge_properties(data_in3D['RHO'],data_in3D['Y'],
+                                           freestream_value=Rho_2)
+    velocity_edge    = box.edge_properties(data_in3D['Ux'],data_in3D['Y'],
+                                           freestream_value=U_2)
+    temperature_wall = box.wall_properties(data_in3D['T'], data_in3D['Y'])
+    density_wall     = box.wall_properties(data_in3D['RHO'], data_in3D['Y'])
+    velocity_wall    = box.wall_properties(data_in3D['Ux'], data_in3D['Y'])
+
     # Plot boundary layer planes 
-    box.plot_boundary_layers(velocity_plane_dict, temperature_plane_dict,
-                             mean_position_dict, velocity_freestream=U_2,
+    box.plot_boundary_layers(velocity_edge, temperature_edge,
+                             u_mean['mean_y'], T_mean['mean_y'], 
+                             mean_position_dict, 
+                             velocity_freestream=U_2,
                              temperature_freestream=T_2,
                              saving_path=saving_path) 
     #box.wall_shear_stress(velocity_plane_dict, mean_position_dict) 
-
 
     # Adding data to the dictionaries 
     if add_dat_flag:
@@ -214,8 +231,8 @@ if working_flag:
         fluctuations_3D['Mt'] = box.split_plot3D(array_1D=mach_t1D,
                                                  mapping=mapping)
         # Reynolds stress structure parameters
-        rssp_1D                 = box.reynolds_stres_structure_parameters(
-                                  fluctuation_1D)
+        rssp_1D                 = box.reynolds_stress_structure_parameters(
+                                  fluctuations_1D)
         fluctuations_1D['RSSP'] = rssp_1D
         fluctuations_3D['RSSP'] = box.split_plot3D(array_1D=rssp_1D,
                                                  mapping=mapping)
@@ -228,6 +245,37 @@ if working_flag:
                               pickle_path=pickle_path,
                               data_to_save=fluctuations_3D)
 
+    # MEAN fields 
+    T_mean  = box.mean_fields(data_in3D['T'])
+    M_mean  = box.mean_fields(data_in3D['M'])
+    P_mean  = box.mean_fields(data_in3D['P'])
+    R_mean  = box.mean_fields(data_in3D['RHO'])
+    K_mean  = box.mean_fields(fluct_3D['K'])
+    Mt_mean = box.mean_fields(fluct_3D['Mt'])
+    ux_mean = box.mean_fields(data_in3D['Ux'])
+    uy_mean = box.mean_fields(data_in3D['Uy'])
+    uz_mean = box.mean_fields(data_in3D['Uz'])
+    Umag_mean = box.mean_fields(data_in3D['UMAG'])
+    Vmag_mean = box.mean_fields(data_in3D['VORTMAG'])
+    Y_mean    = y_mean['mean_y'] * 10**3 
+
+    
+    box.plot_mean_fields(mu_mean['mean_y'], 
+                Y_mean, 'MU', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(P_mean['mean_y'], 
+                Y_mean, 'P', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(Mt_mean['mean_y'], 
+                Y_mean, 'Mt [ ]', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(R_mean['mean_y'], 
+                Y_mean, 'RHO', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(K_mean['mean_y'], 
+                Y_mean, 'K', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(M_mean['mean_y'], 
+                Y_mean, 'M [ ]', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(Umag_mean['mean_y'], 
+                Y_mean, 'UMAG', 'y [mm]', saving_path=saving_path)
+    box.plot_mean_fields(Vmag_mean['mean_y'], 
+                Y_mean, 'VORTMAG', 'y [mm]', saving_path=saving_path)
     '''
     # Generate plots  
     box.plot_lineXY(data_in3D, 'Ux', 'Y', x_dim=700, z_dim=300, 
