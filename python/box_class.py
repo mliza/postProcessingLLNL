@@ -15,11 +15,14 @@
                                   properties and Van-Driest transform
 '''
 import numpy as np 
+import pandas as pd 
 import matplotlib.pyplot as plt
 import IPython
 import sys 
 import os 
 from dataclasses import dataclass, field  
+from scipy import integrate 
+from scipy.fft import fft 
 from scipy.io import FortranFile
 from scipy.optimize import curve_fit 
 # My own stuff 
@@ -191,9 +194,14 @@ class Box():
         return dict_out 
 
 # Reynolds Decomposition 
-    def reynolds_decomposition(self, array_1D):
-        decomposition_1D = array_1D - np.mean(array_1D)
-        return decomposition_1D 
+    def reynolds_decomposition(self, array_3D):
+        decomp_3D = np.empty([self.nx, self.ny, self.nz])
+        for i in range(self.nx):
+            for j in range(self.ny):
+                mean_var = np.mean(array_3D[i,j,:])
+                for k in range(self.nz):
+                    decomp_3D[i,j,k] = array_3D[i,j,k] - mean_var 
+        return decomp_3D
 
 # Reynolds stress structure parameters
     def reynolds_stress_structure_parameters(self, fluctuation_1D):
@@ -203,6 +211,44 @@ class Box():
         k       = fluctuation_1D['K'] 
         rssp_1D = (2 * (u_x * u_y + u_y * u_z + u_x * u_z) + k) / k
         return rssp_1D
+
+# Energy cascade 
+   # def turbulent_energy_spetrum(self, kinetic_energy_3D):
+
+# Auto correlation 
+    def autocorrelation_function(self, radius, fluctuation_field, 
+                                 autocorrelation_len=50):
+        fluctuation_len = len(fluctuation_field) - 1
+        numerator       = np.zeros(autocorrelation_len) 
+        denominator     = np.zeros(autocorrelation_len) 
+        autocorrelation_radius = np.linspace(0, np.max(radius), 
+                                             autocorrelation_len)
+        for i in range(fluctuation_len):
+            k = i
+            for j in range(autocorrelation_len):
+                numerator[j]   += (fluctuation_field[i] * fluctuation_field[k])
+                denominator[j] += fluctuation_field[i]**2
+                k += 1
+                if (k > fluctuation_len):
+                    break 
+        autocorrelation = numerator / denominator 
+        # Calculate length scales 
+        delta_x    = np.mean(np.diff(autocorrelation_radius)) 
+        derivative = (2 * autocorrelation[0] - 5 * autocorrelation[1] + 
+                    4 * autocorrelation[2] - autocorrelation[3]) / delta_x**2 
+        if derivative > 0:
+            derivative = (autocorrelation[0] - 2 * autocorrelation[1] +  
+                          autocorrelation[2]) / delta_x**2
+
+        taylor_scale   = 1 / np.sqrt(-0.5 * derivative)
+        integral_scale = np.abs(integrate.simpson(autocorrelation, dx=delta_x))
+
+        # Dictionary to return 
+        correlation_dict = { 'radius'     : autocorrelation_radius,
+                             'correlation': autocorrelation, 
+                             'taylor'     : taylor_scale, 
+                             'integral'   : integral_scale }
+        return correlation_dict
 
 # Wall shear-stress 
     def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, 
@@ -239,8 +285,14 @@ class Box():
 
         return van_driest_dict 
 
+# Fitting function
+    def smoothing_function(self, data_in, box_pts):
+        box         = np.ones(box_pts)/box_pts 
+        data_smooth = np.convolve(data_in, box, mode='same')
+        return data_smooth 
+
 # Van Driest plot 
-    def plot_van_driest(self, van_driest_dict, saving_path=None): 
+    def plot_van_driest(self, van_driest_dict, testing_path=None, saving_path=None): 
         plt.plot(van_driest_dict['mean_y_plus'], 
                  van_driest_dict['mean_u_plus'], 
                  color='k', linestyle='-', linewidth=2) 
@@ -248,6 +300,14 @@ class Box():
                  van_driest_dict['mean_u_plus'], 
                  'o', markersize=5, markerfacecolor='lightgrey', 
                   markeredgecolor='k')
+
+        if testing_path != None: 
+            testing_file = os.path.join(testing_path,
+                        'vanDriestTransformation.csv')
+            df           = pd.read_csv(testing_file) 
+            y_plus       = np.array(df['y_plus'])
+            u_plus       = np.array(df['u_plus'])
+            plt.plot(y_plus, u_plus, linewidth=2, linestyle='-.')
         plt.xscale('log')
         plt.grid('-.')
         plt.xlabel('$y^+$')
@@ -260,12 +320,6 @@ class Box():
             plt.tight_layout()
             plt.savefig(f'{saving_path}/vanDriestTransformation.png', dpi=300)
             plt.close() 
-
-# Fitting function
-    def smoothing_function(self, data_in, box_pts):
-        box         = np.ones(box_pts)/box_pts 
-        data_smooth = np.convolve(data_in, box, mode='same')
-        return data_smooth 
 
 # Plot boundary Layers 
     def plot_boundary_layers(self, velocity_boundary_dict, 
@@ -321,66 +375,6 @@ class Box():
             fig.savefig(f'{saving_path}/boundary_layers.png', dpi=300)
             plt.close() 
 
-# Plot boundary surface 
-    def plot_boundary_surface(self, boundary_plane_dict, 
-                              grid_mean_dict):  
-        # Loading data 
-        X_mean        = grid_mean_dict['mean_x'] 
-        Z_mean        = grid_mean_dict['mean_z'] 
-        height        = boundary_plane_dict['thickness']
-        boundary_mean = boundary_plane_dict['mean_thickness']  
-        X,Y           = np.meshgrid(Z_mean, X_mean)
-
-        #IPython.embed(colors='Linux') 
-        #fig = plt.figure(figsize=(8,8))
-        fig = plt.figure()
-        ax  = fig.add_subplot(111, projection='3d') 
-        ax.plot_surface(X, Y, height) 
-            
-# Plot line for 2 variables  
-    def plot_lineXY(self, array_dict_3D, var_x, var_y, 
-                    x_dim=None, y_dim=None, z_dim=None, saving_path=None):
-        if x_dim is None:
-            x_axis    = array_dict_3D[var_x][:, y_dim, z_dim] 
-            y_axis    = array_dict_3D[var_y][:, y_dim, z_dim] 
-            label_str = f'y={y_dim}, z={y_dim}'
-        if y_dim is None:
-            x_axis    = array_dict_3D[var_x][x_dim, :, z_dim] 
-            y_axis    = array_dict_3D[var_y][x_dim, :, z_dim] 
-            label_str = f'x={x_dim}, z={y_dim}'
-        if z_dim is None:
-            x_axis    = array_dict_3D[var_x][x_dim, y_dim, :] 
-            y_axis    = array_dict_3D[var_y][x_dim, y_dim, :]
-            label_str = f'x={x_dim}, z={y_dim}'
-        # Legend, title 
-        plt.plot(x_axis, y_axis, color='k',  linestyle='-', linewidth=3,
-                 label=label_str) 
-        plt.grid('-.') 
-        plt.legend() 
-        plt.xlabel(f'{var_x}')
-        plt.ylabel(f'{var_y}')
-        plt.title(f'{var_y} vs. {var_x}') 
-        # Saving if needed 
-        if saving_path == None:
-            plt.show() 
-        if saving_path != None:
-            plt.savefig(f'{saving_path}/{var_x}_{var_y}.png', dpi=300)
-            plt.close() 
-
-# Plot mean_fields 
-    def plot_mean_fields(self, x_axis, y_axis, x_str, y_str, saving_path=None):
-        # Legend, title 
-        plt.plot(x_axis, y_axis, color='k',  linestyle='-', linewidth=3)
-        plt.grid('-.') 
-        plt.xlabel(f'{x_str}')
-        plt.ylabel(f'{y_str}')
-        # Saving if needed 
-        if saving_path == None:
-            plt.show() 
-        if saving_path != None:
-            plt.savefig(f'{saving_path}/{x_str}_{y_str}.png', dpi=300)
-            plt.close() 
-
 # Making contour plots 
     def plot_contour(self, array_dict_3D, grid_x, grid_y, 
                 field, slice_cut, slice_direction,
@@ -417,3 +411,63 @@ class Box():
             plt.savefig(f'{saving_path}/contour{grid_x}{grid_y}_{field}.png', 
                             bbox_inches='tight', dpi=300)
             plt.close() 
+
+# Plot line for 2 variables  
+    def plot_lineXY(self, array_dict_3D, var_x, var_y, 
+                    x_dim=None, y_dim=None, z_dim=None, saving_path=None):
+        if x_dim is None:
+            x_axis    = array_dict_3D[var_x][:, y_dim, z_dim] 
+            y_axis    = array_dict_3D[var_y][:, y_dim, z_dim] 
+            label_str = f'y={y_dim}, z={z_dim}'
+        if y_dim is None:
+            x_axis    = array_dict_3D[var_x][x_dim, :, z_dim] 
+            y_axis    = array_dict_3D[var_y][x_dim, :, z_dim] 
+            label_str = f'x={x_dim}, z={z_dim}'
+        if z_dim is None:
+            x_axis    = array_dict_3D[var_x][x_dim, y_dim, :] 
+            y_axis    = array_dict_3D[var_y][x_dim, y_dim, :]
+            label_str = f'x={x_dim}, y={y_dim}'
+        # Legend, title 
+        plt.plot(x_axis, y_axis, color='k',  linestyle='-', linewidth=3,
+                 label=label_str) 
+        plt.grid('-.') 
+        plt.legend() 
+        plt.xlabel(f'{var_x}')
+        plt.ylabel(f'{var_y}')
+        plt.title(f'{var_y} vs. {var_x}') 
+        # Saving if needed 
+        if saving_path == None:
+            plt.show() 
+        if saving_path != None:
+            plt.savefig(f'{saving_path}/{var_x}_{var_y}.png', dpi=300)
+            plt.close() 
+
+# Plot mean_fields 
+    def plot_mean_fields(self, x_axis, y_axis, x_str, y_str, saving_path=None):
+        # Legend, title 
+        plt.plot(x_axis, y_axis, color='k',  linestyle='-', linewidth=3)
+        plt.grid('-.') 
+        plt.xlabel(f'{x_str}')
+        plt.ylabel(f'{y_str}')
+        # Saving if needed 
+        if saving_path == None:
+            plt.show() 
+        if saving_path != None:
+            plt.savefig(f'{saving_path}/{x_str}_{y_str}.png', dpi=300)
+            plt.close() 
+
+# Plot boundary surface 
+    def plot_boundary_surface(self, boundary_plane_dict, 
+                              grid_mean_dict):  
+        # Loading data 
+        X_mean        = grid_mean_dict['mean_x'] 
+        Z_mean        = grid_mean_dict['mean_z'] 
+        height        = boundary_plane_dict['thickness']
+        boundary_mean = boundary_plane_dict['mean_thickness']  
+        X,Y           = np.meshgrid(Z_mean, X_mean)
+
+        #IPython.embed(colors='Linux') 
+        #fig = plt.figure(figsize=(8,8))
+        fig = plt.figure()
+        ax  = fig.add_subplot(111, projection='3d') 
+        ax.plot_surface(X, Y, height) 

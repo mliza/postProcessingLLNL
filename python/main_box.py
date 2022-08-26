@@ -30,6 +30,8 @@ import f_vectorReader
 
 # User Inputs 
 data_path    = '../../plate_data/data_15'
+papers_path  = '../../plate_data/papers_data'
+pino_path    = os.path.join(papers_path, 'pino_martin') 
 pickle_path  = os.path.join(data_path, 'pickle')
 temp_path    = os.path.join(data_path, 'temp_data')  
 box_path     = os.path.join(data_path, 'BOX')  
@@ -49,6 +51,7 @@ writing_flag = False
 working_flag = True  
 add_dat_flag = False 
 fluct_flag   = False  
+rms_flag     = False  
 scalar_in    = [ 'T', 'RHO', 'P',
                  'RHOE', 'GRADRHOMAG', 
                  'GRADV_11', 'GRADV_12', 'GRADV_13',
@@ -118,51 +121,14 @@ if working_flag:
                                       pickle_path=pickle_path)
     mapping   = helper.pickle_manager(pickle_name_file='mapping', 
                                       pickle_path=pickle_path)
+
     # Only loads after data is being proceed 
-    if not fluct_flag and not add_dat_flag:
-        fluct_1D  = helper.pickle_manager(pickle_name_file='fluctuations_dict_1D', 
+    if not fluct_flag and not add_dat_flag: 
+        fluct_3D = helper.pickle_manager(pickle_name_file='fluctuations_dict_3D', 
                                       pickle_path=pickle_path)
-        fluct_3D  = helper.pickle_manager(pickle_name_file='fluctuations_dict_3D', 
+        if not rms_flag:
+            rms_3D   = helper.pickle_manager(pickle_name_file='rms_dict_3D', 
                                       pickle_path=pickle_path)
-
-    # Calculating mean fields 
-    x_mean   = box.mean_fields(data_in3D['X'])
-    y_mean   = box.mean_fields(data_in3D['Y'])
-    z_mean   = box.mean_fields(data_in3D['Z']) 
-    u_mean   = box.mean_fields(data_in3D['Ux'])
-    T_mean   = box.mean_fields(data_in3D['T'])
-    mu_mean  = box.mean_fields(data_in3D['MU'])
-    rho_mean = box.mean_fields(data_in3D['RHO'])
-    s12_mean = box.mean_fields(data_in3D['GRADV_12'])
-
-    mean_position_dict = {'mean_x' : x_mean['mean_x'], 
-                          'mean_y' : y_mean['mean_y'], 
-                          'mean_z' : z_mean['mean_z']} 
-
-    van_driest = box.van_driest(s12_mean, u_mean, y_mean, rho_mean, mu_mean)  
-    box.plot_van_driest(van_driest, saving_path=saving_path)
-
-
-    # Calculate boundary layer thickness planes 
-    temperature_edge = box.edge_properties(data_in3D['T'], data_in3D['Y'],
-                                           freestream_value=T_2)
-    density_edge     = box.edge_properties(data_in3D['RHO'],data_in3D['Y'],
-                                           freestream_value=Rho_2)
-    velocity_edge    = box.edge_properties(data_in3D['Ux'],data_in3D['Y'],
-                                           freestream_value=U_2)
-    temperature_wall = box.wall_properties(data_in3D['T'], data_in3D['Y'])
-    density_wall     = box.wall_properties(data_in3D['RHO'], data_in3D['Y'])
-    velocity_wall    = box.wall_properties(data_in3D['Ux'], data_in3D['Y'])
-
-    # Plot boundary layer planes 
-    box.plot_boundary_layers(velocity_edge, temperature_edge,
-                             u_mean['mean_y'], T_mean['mean_y'], 
-                             mean_position_dict, 
-                             velocity_freestream=U_2,
-                             temperature_freestream=T_2,
-                             saving_path=saving_path) 
-    #box.wall_shear_stress(velocity_plane_dict, mean_position_dict) 
-
     # Adding data to the dictionaries 
     if add_dat_flag:
         grad_1D        = box.gradient_fields(data_in1D) 
@@ -200,94 +166,148 @@ if working_flag:
                                        pickle_dict_in='new_dict_3D',
                                        pickle_dict_out='new_dict_3D')
 
-    # Fluctuations 
+    # Adding fluctuations dictionary  
     if fluct_flag:
         # Key values 
-        keys = list(data_in1D.keys()) 
+        keys = list(data_in3D.keys()) 
         keys.remove('X')
         keys.remove('Y')
         keys.remove('Z') 
-        keys.remove('SoS')
-        keys.remove('M')
-        fluctuations_1D = { } 
         fluctuations_3D = { } 
         # Calculate Reynolds decomposition 
         for i in keys:
-            temp_1D            = box.reynolds_decomposition(data_in1D[i]) 
-            fluctuations_1D[i] = temp_1D
-            fluctuations_3D[i] = box.split_plot3D(array_1D=temp_1D, 
-                                                 mapping=mapping)
+            fluctuations_3D[i] = box.reynolds_decomposition(data_in3D[i]) 
+
         # Turbulent Kinetic Energy 
-        turb_k1D = (0.5 * (fluctuations_1D['Ux']**2 + 
-                           fluctuations_1D['Uy']**2 + 
-                           fluctuations_1D['Uz']**2)) 
-        mach_t1D = np.sqrt(2 * turb_k1D) / np.mean(data_in1D['SoS'])  
+        fluctuations_3D['K']  = (0.5 * (fluctuations_3D['Ux']**2 + 
+                               fluctuations_3D['Uy']**2 + 
+                               fluctuations_3D['Uz']**2)) 
+        fluctuations_3D['Mt'] = (np.sqrt(2 * fluctuations_3D['K']) / 
+                                np.mean(data_in3D['SoS']))
 
-        fluctuations_1D['K']  = turb_k1D
-        fluctuations_3D['K']  = box.split_plot3D(array_1D=turb_k1D,
-                                                 mapping=mapping)
-        # Turbulent mach number 
-        fluctuations_1D['Mt'] = mach_t1D
-        fluctuations_3D['Mt'] = box.split_plot3D(array_1D=mach_t1D,
-                                                 mapping=mapping)
-        # Reynolds stress structure parameters
-        rssp_1D                 = box.reynolds_stress_structure_parameters(
-                                  fluctuations_1D)
-        fluctuations_1D['RSSP'] = rssp_1D
-        fluctuations_3D['RSSP'] = box.split_plot3D(array_1D=rssp_1D,
-                                                 mapping=mapping)
-
-        # Saving 1D and 3D arrays 
-        helper.pickle_manager(pickle_name_file='fluctuations_dict_1D', 
-                              pickle_path=pickle_path,
-                              data_to_save=fluctuations_1D)
+        # Saving 3D arrays 
         helper.pickle_manager(pickle_name_file='fluctuations_dict_3D', 
                               pickle_path=pickle_path,
                               data_to_save=fluctuations_3D)
 
-    # MEAN fields 
-    T_mean  = box.mean_fields(data_in3D['T'])
-    M_mean  = box.mean_fields(data_in3D['M'])
-    P_mean  = box.mean_fields(data_in3D['P'])
-    R_mean  = box.mean_fields(data_in3D['RHO'])
-    K_mean  = box.mean_fields(fluct_3D['K'])
-    Mt_mean = box.mean_fields(fluct_3D['Mt'])
-    ux_mean = box.mean_fields(data_in3D['Ux'])
-    uy_mean = box.mean_fields(data_in3D['Uy'])
-    uz_mean = box.mean_fields(data_in3D['Uz'])
-    Umag_mean = box.mean_fields(data_in3D['UMAG'])
-    Vmag_mean = box.mean_fields(data_in3D['VORTMAG'])
-    Y_mean    = y_mean['mean_y'] * 10**3 
+    # Adding fluctuation dictionary 
+    if rms_flag:
+        # Key values 
+        keys   = list(fluct_3D.keys()) 
+        rms_3D = { } 
+        # Calculate Reynolds decomposition 
+        for i in keys:
+            rms_3D[i] = np.sqrt((fluct_3D[i])**2) 
+        
+        # Saving 3D arrays 
+        helper.pickle_manager(pickle_name_file='rms_dict_3D', 
+                              pickle_path=pickle_path,
+                              data_to_save=rms_3D)
 
-    
-    box.plot_mean_fields(mu_mean['mean_y'], 
-                Y_mean, 'MU', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(P_mean['mean_y'], 
-                Y_mean, 'P', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(Mt_mean['mean_y'], 
-                Y_mean, 'Mt [ ]', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(R_mean['mean_y'], 
-                Y_mean, 'RHO', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(K_mean['mean_y'], 
-                Y_mean, 'K', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(M_mean['mean_y'], 
-                Y_mean, 'M [ ]', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(Umag_mean['mean_y'], 
-                Y_mean, 'UMAG', 'y [mm]', saving_path=saving_path)
-    box.plot_mean_fields(Vmag_mean['mean_y'], 
-                Y_mean, 'VORTMAG', 'y [mm]', saving_path=saving_path)
-    '''
+    # List keys 
+    fluct_keys = list(fluct_3D.keys()) 
+    data_keys  = list(data_in1D.keys()) 
+
+    # Calculate mean fields  
+    x_mean   = box.mean_fields(data_in3D['X'])
+    y_mean   = box.mean_fields(data_in3D['Y'])
+    z_mean   = box.mean_fields(data_in3D['Z']) 
+    Ux_mean  = box.mean_fields(data_in3D['Ux'])
+    rho_mean = box.mean_fields(data_in3D['RHO'])
+    T_mean   = box.mean_fields(data_in3D['T'])
+    mu_mean  = box.mean_fields(data_in3D['MU'])
+    s12_mean = box.mean_fields(data_in3D['GRADV_12'])
+    Uy_mean  = box.mean_fields(data_in3D['Uy'])
+    Uz_mean  = box.mean_fields(data_in3D['Uz'])
+    Mt_mean  = box.mean_fields(fluct_3D['Mt'])
+    Ux_rms   = box.mean_fields(rms_3D['Ux'])
+    Uy_rms   = box.mean_fields(rms_3D['Uy'])
+    Uz_rms   = box.mean_fields(rms_3D['Uz'])
+    T_rms    = box.mean_fields(rms_3D['T'])
+    Mt_rms   = box.mean_fields(rms_3D['Mt'])
+    M_rms    = box.mean_fields(rms_3D['M'])
+
+
+    # Longitudinal correlation 
+    f_correlation = box.autocorrelation_function(data_in3D['X'][:,-1,-1], 
+                                                 data_in3D['Ux'][:,-1,-1],
+                                                 autocorrelation_len=128) 
+
+    g_correlation = box.autocorrelation_function(data_in3D['X'][:,-1,0], 
+                                                 data_in3D['Uy'][:,-1,-1],
+                                                 autocorrelation_len=128) 
+
+    IPython.embed(colors = 'Linux') 
+    mean_position_dict = {'mean_x' : x_mean['mean_x'], 
+                          'mean_y' : y_mean['mean_y'], 
+                          'mean_z' : z_mean['mean_z']} 
+
+    # Van Driest transformation 
+    van_driest = box.van_driest(s12_mean, Ux_mean, y_mean, rho_mean, mu_mean)  
+
+    # Calculate wall and edge values  
+    temperature_edge = box.edge_properties(data_in3D['T'], data_in3D['Y'],
+                                           freestream_value=T_2)
+    density_edge     = box.edge_properties(data_in3D['RHO'],data_in3D['Y'],
+                                           freestream_value=Rho_2)
+    velocity_edge    = box.edge_properties(data_in3D['Ux'],data_in3D['Y'],
+                                           freestream_value=U_2)
+    temperature_wall = box.wall_properties(data_in3D['T'], data_in3D['Y'])
+    density_wall     = box.wall_properties(data_in3D['RHO'], data_in3D['Y'])
+    velocity_wall    = box.wall_properties(data_in3D['Ux'], data_in3D['Y'])
+    y_plus           = van_driest['mean_y_plus'] 
+
+    # Calculate normalized fields  
+    u_rms = Ux_rms['mean_y'] / np.mean(van_driest['u_tau']) 
+    v_rms = Uy_rms['mean_y'] / np.mean(van_driest['u_tau'])
+    w_rms = Uz_rms['mean_y'] / np.mean(van_driest['u_tau'])
+    t_rms = T_rms['mean_y'] / np.mean(temperature_edge['mean_edge_field']) 
+
+    # RMS plots 
+    # Plot u, v, w rms 
+    plt.plot(y_plus, u_rms, linewidth=2, label='$u_{rms}$')
+    plt.plot(y_plus, v_rms, linewidth=2, label='$v_{rms}$')
+    plt.plot(y_plus, w_rms, linewidth=2, label='$w_{rms}$')
+    plt.legend()
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel('$U_{rms}/u_{\\tau}$')
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/velocity_rms.png', dpi=300) 
+    plt.close() 
+
+    # Plot Mt and M fluctuations 
+    plt.plot(y_plus, M_rms['mean_y'], linewidth=2, label='$M^{\prime}$')
+    plt.plot(y_plus, Mt_rms['mean_y'], linewidth=2, label='$M_t^{\prime}$')
+    plt.legend()
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel('$M^{\prime} \;\;&\;\; M^{\prime}_t$')
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/mach_fluctuations.png', dpi=300) 
+    plt.close() 
+
     # Generate plots  
-    box.plot_lineXY(data_in3D, 'Ux', 'Y', x_dim=700, z_dim=300, 
+    # Plot boundary layer planes 
+    box.plot_boundary_layers(velocity_edge, temperature_edge,
+                             Ux_mean['mean_y'], T_mean['mean_y'], 
+                             mean_position_dict, 
+                             velocity_freestream=U_2,
+                             temperature_freestream=T_2,
+                             saving_path=saving_path) 
+
+    box.plot_van_driest(van_driest, testing_path=pino_path, 
+                        saving_path=saving_path)
+
+    box.plot_lineXY(data_in3D, 'X', 'Ux', y_dim=40, z_dim=30, 
                     saving_path=saving_path) 
-    box.plot_lineXY(data_in3D, 'Uy', 'Y', x_dim=700, z_dim=300, 
+    box.plot_lineXY(data_in3D, 'Y', 'Uy', x_dim=700, z_dim=30, 
                     saving_path=saving_path) 
     box.plot_lineXY(data_in3D, 'Z', 'Uz', x_dim=700, y_dim=40, 
                     saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='RHO', 
-                     slice_cut=40, slice_direction='Y', 
-                     levels=500, saving_path=saving_path) 
-    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='DIL', 
                      slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='VORTMAG', 
@@ -297,6 +317,5 @@ if working_flag:
                      slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
     box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='Ux', 
-                     slice_cut=40, slice_direction='Y', 
-                     levels=500, saving_path=saving_path) 
-    '''
+                     slice_cut=50, slice_direction='Y', 
+                     levels=700, saving_path=saving_path) 
