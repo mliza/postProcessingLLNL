@@ -376,26 +376,26 @@ class Box():
             plt.close() 
 
 # Making contour plots 
-    def plot_contour(self, array_dict_3D, grid_x, grid_y, 
+    def plot_contour(self, data_dict3D, grid_dict3D, grid_x, grid_y, 
                 field, slice_cut, slice_direction,
                 levels=6, cmap='inferno', saving_path=None): 
         # Create slides 
         slice_direction = slice_direction.upper() 
         if slice_direction == 'X':
-            x_plane     = array_dict_3D[grid_x][slice_cut,:,:]
-            y_plane     = array_dict_3D[grid_y][slice_cut,:,:]
-            z_plane     = array_dict_3D[field][slice_cut,:,:]
-            slice_value = array_dict_3D[slice_direction][:,-1,-1][slice_cut] 
+            x_plane     = grid_dict3D[grid_x][slice_cut,:,:]
+            y_plane     = grid_dict3D[grid_y][slice_cut,:,:]
+            z_plane     = data_dict3D[field][slice_cut,:,:]
+            slice_value = grid_dict3D[slice_direction][:,-1,-1][slice_cut] 
         if slice_direction == 'Y':
-            x_plane     = array_dict_3D[grid_x][:,slice_cut,:]
-            y_plane     = array_dict_3D[grid_y][:,slice_cut,:]
-            z_plane     = array_dict_3D[field][:,slice_cut,:]
-            slice_value = array_dict_3D[slice_direction][-1,:,-1][slice_cut] 
+            x_plane     = grid_dict3D[grid_x][:,slice_cut,:]
+            y_plane     = grid_dict3D[grid_y][:,slice_cut,:]
+            z_plane     = data_dict3D[field][:,slice_cut,:]
+            slice_value = grid_dict3D[slice_direction][-1,:,-1][slice_cut] 
         if slice_direction == 'Z':
-            x_plane     = array_dict_3D[grid_x][:,:,slice_cut]
-            y_plane     = array_dict_3D[grid_y][:,:,slice_cut]
-            z_plane     = array_dict_3D[field][:,:,slice_cut]
-            slice_value = array_dict_3D[slice_direction][-1,-1,:][slice_cut] 
+            x_plane     = grid_dict3D[grid_x][:,:,slice_cut]
+            y_plane     = grid_dict3D[grid_y][:,:,slice_cut]
+            z_plane     = data_dict3D[field][:,:,slice_cut]
+            slice_value = grid_dict3D[slice_direction][-1,-1,:][slice_cut] 
         # Plotting 
         plt.contourf(x_plane, y_plane, z_plane, 
                     levels=levels, cmap=cmap)

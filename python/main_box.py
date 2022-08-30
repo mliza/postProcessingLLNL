@@ -129,6 +129,7 @@ if working_flag:
         if not rms_flag:
             rms_3D   = helper.pickle_manager(pickle_name_file='rms_dict_3D', 
                                       pickle_path=pickle_path)
+
     # Adding data to the dictionaries 
     if add_dat_flag:
         grad_1D        = box.gradient_fields(data_in1D) 
@@ -216,6 +217,8 @@ if working_flag:
     rho_mean = box.mean_fields(data_in3D['RHO'])
     T_mean   = box.mean_fields(data_in3D['T'])
     mu_mean  = box.mean_fields(data_in3D['MU'])
+    M_mean   = box.mean_fields(data_in3D['M'])
+    Mt_mean  = box.mean_fields(fluct_3D['Mt'])
     s12_mean = box.mean_fields(data_in3D['GRADV_12'])
     Uy_mean  = box.mean_fields(data_in3D['Uy'])
     Uz_mean  = box.mean_fields(data_in3D['Uz'])
@@ -237,10 +240,13 @@ if working_flag:
                                                  data_in3D['Uy'][:,-1,-1],
                                                  autocorrelation_len=128) 
 
-    IPython.embed(colors = 'Linux') 
     mean_position_dict = {'mean_x' : x_mean['mean_x'], 
                           'mean_y' : y_mean['mean_y'], 
                           'mean_z' : z_mean['mean_z']} 
+
+    grid_dict = { 'X' : data_in3D['X'], 
+                 'Y' : data_in3D['Y'],
+                 'Z' : data_in3D['Z'] } 
 
     # Van Driest transformation 
     van_driest = box.van_driest(s12_mean, Ux_mean, y_mean, rho_mean, mu_mean)  
@@ -289,6 +295,17 @@ if working_flag:
     plt.savefig(f'{saving_path}/mach_fluctuations.png', dpi=300) 
     plt.close() 
 
+    # Plot Mt and M 
+    #plt.plot(y_plus, M_mean['mean_y'], linewidth=2, label='$M$')
+    plt.plot(y_plus, Mt_mean['mean_y'], linewidth=2, label='$M_t$')
+    plt.legend()
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel('$M \;\;&\;\; M_t$')
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/mach.png', dpi=300) 
+    plt.close() 
     # Generate plots  
     # Plot boundary layer planes 
     box.plot_boundary_layers(velocity_edge, temperature_edge,
