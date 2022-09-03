@@ -11,6 +11,7 @@
 '''
 import numpy as np 
 import matplotlib.pyplot as plt 
+import pandas as pd 
 import IPython 
 import sys 
 import os 
@@ -210,43 +211,45 @@ if working_flag:
     data_keys  = list(data_in1D.keys()) 
 
     # Calculate mean fields  
-    x_mean   = box.mean_fields(data_in3D['X'])
-    y_mean   = box.mean_fields(data_in3D['Y'])
-    z_mean   = box.mean_fields(data_in3D['Z']) 
-    Ux_mean  = box.mean_fields(data_in3D['Ux'])
-    rho_mean = box.mean_fields(data_in3D['RHO'])
-    T_mean   = box.mean_fields(data_in3D['T'])
-    mu_mean  = box.mean_fields(data_in3D['MU'])
-    M_mean   = box.mean_fields(data_in3D['M'])
-    Mt_mean  = box.mean_fields(fluct_3D['Mt'])
-    s12_mean = box.mean_fields(data_in3D['GRADV_12'])
-    Uy_mean  = box.mean_fields(data_in3D['Uy'])
-    Uz_mean  = box.mean_fields(data_in3D['Uz'])
-    Mt_mean  = box.mean_fields(fluct_3D['Mt'])
-    Ux_rms   = box.mean_fields(rms_3D['Ux'])
-    Uy_rms   = box.mean_fields(rms_3D['Uy'])
-    Uz_rms   = box.mean_fields(rms_3D['Uz'])
-    T_rms    = box.mean_fields(rms_3D['T'])
-    Mt_rms   = box.mean_fields(rms_3D['Mt'])
-    M_rms    = box.mean_fields(rms_3D['M'])
-
+    loc_mean  = box.mean_positions(data_in3D) 
+    Ux_mean   = box.mean_fields(data_in3D['Ux'])
+    rho_mean  = box.mean_fields(data_in3D['RHO'])
+    T_mean    = box.mean_fields(data_in3D['T'])
+    mu_mean   = box.mean_fields(data_in3D['MU'])
+    M_mean    = box.mean_fields(data_in3D['M'])
+    Mt_mean   = box.mean_fields(fluct_3D['Mt'])
+    K_mean    = box.mean_fields(fluct_3D['K']) 
+    s12_mean  = box.mean_fields(data_in3D['GRADV_12'])
+    Uy_mean   = box.mean_fields(data_in3D['Uy'])
+    Uz_mean   = box.mean_fields(data_in3D['Uz'])
+    Mt_mean   = box.mean_fields(fluct_3D['Mt'])
+    Ux_rms    = box.mean_fields(rms_3D['Ux'])
+    Uy_rms    = box.mean_fields(rms_3D['Uy'])
+    Uz_rms    = box.mean_fields(rms_3D['Uz'])
+    T_rms     = box.mean_fields(rms_3D['T'])
+    Mt_rms    = box.mean_fields(rms_3D['Mt'])
+    M_rms     = box.mean_fields(rms_3D['M'])
+    grid_dict = { 'X' : data_in3D['X'], 
+                  'Y' : data_in3D['Y'],
+                  'Z' : data_in3D['Z'] } 
 
     # Longitudinal correlation 
-    f_correlation = box.autocorrelation_function(data_in3D['X'][:,-1,-1], 
-                                                 data_in3D['Ux'][:,-1,-1],
-                                                 autocorrelation_len=128) 
+    f_correlation = box.correlation_function(data_in3D['X'][:,-1,-1], 
+                                             fluct_3D['Ux'][:,-1,-1],
+                                             fluct_3D['Ux'][:,-1,-1],
+                                             autocorrelation_len=80) 
 
-    g_correlation = box.autocorrelation_function(data_in3D['X'][:,-1,0], 
-                                                 data_in3D['Uy'][:,-1,-1],
-                                                 autocorrelation_len=128) 
+    # Transversal correlation 
+    g_correlation = box.correlation_function(data_in3D['X'][:,-1,-1], 
+                                             fluct_3D['Uy'][:,-1,-1],
+                                             fluct_3D['Uy'][:,-1,-1],
+                                             autocorrelation_len=70) 
 
-    mean_position_dict = {'mean_x' : x_mean['mean_x'], 
-                          'mean_y' : y_mean['mean_y'], 
-                          'mean_z' : z_mean['mean_z']} 
-
-    grid_dict = { 'X' : data_in3D['X'], 
-                 'Y' : data_in3D['Y'],
-                 'Z' : data_in3D['Z'] } 
+    # Energy cascade 
+    energy_cascade = box.energy_spectrum(data_in3D['X'][:,-1,-1], 
+                                         fluct_3D['K'][:,-1,-1], 
+                                         n_bins=2)
+    box.str_locations(loc_mean, y=-1, z=-1) 
 
     # Van Driest transformation 
     van_driest = box.van_driest(s12_mean, Ux_mean, y_mean, rho_mean, mu_mean)  
@@ -267,10 +270,40 @@ if working_flag:
     u_rms = Ux_rms['mean_y'] / np.mean(van_driest['u_tau']) 
     v_rms = Uy_rms['mean_y'] / np.mean(van_driest['u_tau'])
     w_rms = Uz_rms['mean_y'] / np.mean(van_driest['u_tau'])
-    t_rms = T_rms['mean_y'] / np.mean(temperature_edge['mean_edge_field']) 
+    t_rms = T_rms['mean_y']  / np.mean(temperature_edge['mean_edge_field']) 
+
+    # Plots correlation
+    # Longitudinal Correlation  
+    plt.plot(f_correlation['radius'], f_correlation['norm_correlation'], 'o-', 
+             markerfacecolor='lightgray', linewidth='3', color='k') 
+    #plt.text(f_correlation['radius'][-1], 1, 
+    plt.xlabel('$radius\;\;[m]$')
+    plt.ylabel('$correlation\;\;[\;]$')
+    plt.grid('-.') 
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/longintudinal_correlation.png', dpi=300) 
+    plt.close() 
+
+    # Transversal Correlation  
+    plt.plot(g_correlation['radius'], g_correlation['norm_correlation'], 'o-', 
+             markerfacecolor='lightgray', linewidth='3', color='k') 
+    plt.xlabel('$radius\;\;[m]$')
+    plt.ylabel('$correlation\;\;[\;]$')
+    plt.grid('-.') 
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/transversal_correlation.png', dpi=300) 
+    plt.close() 
 
     # RMS plots 
     # Plot u, v, w rms 
+    # LOADING RMS 
+    '''
+    testing_file = os.path.join(pino_path, 'uRMSnormalized.csv')
+    df = pd.read_csv(testing_file)
+    y_pino = np.array(df['y_plus']) 
+    u_pino  = np.array(df['u_rms']) 
+    plt.plot(y_pino, u_pino, linewidth=2, label='pino')
+    '''
     plt.plot(y_plus, u_rms, linewidth=2, label='$u_{rms}$')
     plt.plot(y_plus, v_rms, linewidth=2, label='$v_{rms}$')
     plt.plot(y_plus, w_rms, linewidth=2, label='$w_{rms}$')
@@ -290,27 +323,60 @@ if working_flag:
     plt.grid('-.')
     plt.xscale('log')
     plt.xlabel('$y^+$')
-    plt.ylabel('$M^{\prime} \;\;&\;\; M^{\prime}_t$')
+    plt.ylabel('$M^{\prime} \;\;&\;\; M^{\prime}_t\;\;\;[\;]$')
     plt.tight_layout()
     plt.savefig(f'{saving_path}/mach_fluctuations.png', dpi=300) 
     plt.close() 
 
-    # Plot Mt and M 
-    #plt.plot(y_plus, M_mean['mean_y'], linewidth=2, label='$M$')
-    plt.plot(y_plus, Mt_mean['mean_y'], linewidth=2, label='$M_t$')
-    plt.legend()
+    # Plot Mt 
+    plt.plot(y_plus, Mt_mean['mean_y'], 'o-',
+             markerfacecolor='lightgray', linewidth='3', color='k') 
     plt.grid('-.')
     plt.xscale('log')
     plt.xlabel('$y^+$')
-    plt.ylabel('$M \;\;&\;\; M_t$')
+    plt.ylabel('$M_t\;\;[\;]$')
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/machTurbulent.png', dpi=300) 
+    plt.close() 
+
+    # Plot M 
+    plt.plot(y_plus, M_mean['mean_y'], 'o-', 
+             markerfacecolor='lightgray', linewidth='3', color='k') 
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel('$M\;\;[\;]$')
     plt.tight_layout()
     plt.savefig(f'{saving_path}/mach.png', dpi=300) 
     plt.close() 
+
+    # Plot K 
+    plt.plot(y_plus, K_mean['mean_y'], 'o-', 
+             markerfacecolor='lightgray', linewidth='3', color='k') 
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel('$K\;\;[m/s]$')
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/turbulentKinetic.png', dpi=300) 
+    plt.close() 
+
+    # Plot T 
+    plt.plot(y_plus, T_rms['mean_y'], 'o-',
+             markerfacecolor='lightgray', linewidth='3', color='k') 
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel('$T\;\;[K]$')
+    plt.tight_layout()
+    plt.savefig(f'{saving_path}/temperature.png', dpi=300) 
+    plt.close() 
+
     # Generate plots  
     # Plot boundary layer planes 
     box.plot_boundary_layers(velocity_edge, temperature_edge,
                              Ux_mean['mean_y'], T_mean['mean_y'], 
-                             mean_position_dict, 
+                             loc_mean, 
                              velocity_freestream=U_2,
                              temperature_freestream=T_2,
                              saving_path=saving_path) 
@@ -318,21 +384,21 @@ if working_flag:
     box.plot_van_driest(van_driest, testing_path=pino_path, 
                         saving_path=saving_path)
 
-    box.plot_lineXY(data_in3D, 'X', 'Ux', y_dim=40, z_dim=30, 
-                    saving_path=saving_path) 
-    box.plot_lineXY(data_in3D, 'Y', 'Uy', x_dim=700, z_dim=30, 
-                    saving_path=saving_path) 
-    box.plot_lineXY(data_in3D, 'Z', 'Uz', x_dim=700, y_dim=40, 
-                    saving_path=saving_path) 
-    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='RHO', 
+    box.plot_contour(data_in3D, grid_dict, grid_x='X', grid_y='Z', field='M', 
                      slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
-    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='VORTMAG', 
+    box.plot_contour(fluct_3D, grid_dict, grid_x='X', grid_y='Z', field='M', 
                      slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
-    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='T', 
+    box.plot_contour(data_in3D, grid_dict, grid_x='X', grid_y='Z', field='RHO', 
                      slice_cut=40, slice_direction='Y', 
                      levels=500, saving_path=saving_path) 
-    box.plot_contour(data_in3D, grid_x='X', grid_y='Z', field='Ux', 
+    box.plot_contour(data_in3D, grid_dict, grid_x='X', grid_y='Z', field='VORTMAG', 
+                     slice_cut=40, slice_direction='Y', 
+                     levels=500, saving_path=saving_path) 
+    box.plot_contour(data_in3D, grid_dict, grid_x='X', grid_y='Z', field='T', 
+                     slice_cut=40, slice_direction='Y', 
+                     levels=500, saving_path=saving_path) 
+    box.plot_contour(data_in3D, grid_dict, grid_x='X', grid_y='Z', field='Ux', 
                      slice_cut=50, slice_direction='Y', 
                      levels=700, saving_path=saving_path) 

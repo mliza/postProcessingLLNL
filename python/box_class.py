@@ -1,18 +1,20 @@
 #!/opt/homebrew/bin/python3
 '''
-    Date:   08/17/2022
+    Date:   09/03/2022
     Author: Martin E. Liza
     File:   box_class.py 
     Def:    Functions used to post process binary 
             box probes output by margot.
 
     Author           Date         Revision
-    -----------------------------------------------------
+    ---------------------------------------------------------------------
     Martin E. Liza   07/19/2022   Initial Version.
     Martin E. Liza   07/25/2022   Added mean fields and 
                                   Reynolds decomposition.
     Martin E. Liza   08/17/2022   Added edge properties, wall
-                                  properties and Van-Driest transform
+                                  properties and Van-Driest transform.
+    Martin E. Liza   09/03/2022   Added energy spectrum, correlation
+                                  and str_location functions. 
 '''
 import numpy as np 
 import pandas as pd 
@@ -103,9 +105,29 @@ class Box():
         return gradient_dict 
 
 # Return fluctuation fields 
-    def reynolds_decomposition(self, array_field1D):
-        fluctuation = array_field1D - np.mean(array_field1D)
-        return fluctuation
+    def mean_positions(self, dict_3D):
+        # Loading data
+        x = dict_3D['X']
+        y = dict_3D['Y']
+        z = dict_3D['Z']
+        # Declaring empty arrays 
+        x_mean = np.empty(self.nx) 
+        y_mean = np.empty(self.ny) 
+        z_mean = np.empty(self.nz) 
+        # Calculating the means 
+        for k in range(self.nz): 
+            z_mean[k] = np.mean(z[:,:,k]) 
+        for i in range(self.nx):
+            x_mean[i] = np.mean(x[i,:,:])
+        for j in range(self.ny):
+            y_mean[j] = np.mean(y[:,j,:])
+        for k in range(self.nz): 
+            z_mean[k] = np.mean(z[:,:,k]) 
+        # Returning dictionary 
+        dict_out = { 'mean_x' : x_mean,
+                     'mean_y' : y_mean,
+                     'mean_z' : z_mean }
+        return dict_out 
 
 # Edge properties  
     def edge_properties(self, array_field3D, array_height3D, freestream_value):
@@ -212,13 +234,10 @@ class Box():
         rssp_1D = (2 * (u_x * u_y + u_y * u_z + u_x * u_z) + k) / k
         return rssp_1D
 
-# Energy cascade 
-   # def turbulent_energy_spetrum(self, kinetic_energy_3D):
-
 # Auto correlation 
-    def autocorrelation_function(self, radius, fluctuation_field, 
+    def correlation_function(self, radius, fluct_field_1, fluct_field_2,  
                                  autocorrelation_len=50):
-        fluctuation_len = len(fluctuation_field) - 1
+        fluctuation_len = len(fluct_field_1) - 1
         numerator       = np.zeros(autocorrelation_len) 
         denominator     = np.zeros(autocorrelation_len) 
         autocorrelation_radius = np.linspace(0, np.max(radius), 
@@ -226,8 +245,8 @@ class Box():
         for i in range(fluctuation_len):
             k = i
             for j in range(autocorrelation_len):
-                numerator[j]   += (fluctuation_field[i] * fluctuation_field[k])
-                denominator[j] += fluctuation_field[i]**2
+                numerator[j]   += (fluct_field_1[i] * fluct_field_2[k])
+                denominator[j] += fluct_field_1[i] * fluct_field_2[i] 
                 k += 1
                 if (k > fluctuation_len):
                     break 
@@ -244,11 +263,36 @@ class Box():
         integral_scale = np.abs(integrate.simpson(autocorrelation, dx=delta_x))
 
         # Dictionary to return 
-        correlation_dict = { 'radius'     : autocorrelation_radius,
-                             'correlation': autocorrelation, 
-                             'taylor'     : taylor_scale, 
-                             'integral'   : integral_scale }
+        correlation_dict = { 'radius'          : autocorrelation_radius,
+                             'norm_correlation': autocorrelation, 
+                             'correlation'     : numerator,
+                             'taylor'          : taylor_scale, 
+                             'integral'        : integral_scale }
         return correlation_dict
+
+# Energy Spectrum 
+    def energy_spectrum(self, radius, kinetic_energy, n_bins=2):
+        ke_hat   = fft(kinetic_energy, self.nx) 
+        psd      = (ke_hat * np.conj(ke_hat) / self.nx).real #Power Spectral Density
+        k_vec    = 1 / radius 
+        num_bins = int(np.floor(self.nx / n_bins) + 1)
+        bin_vec  = range(1, num_bins + 1)
+        pwf      = np.zeros(num_bins)
+        log_freq = np.log10(bin_vec) 
+        # Butterworth filter spectrum with 1/10th 
+        for i in range(num_bins - 1):
+            count   = 0 
+            sum_pwd = 0
+            log_freq_0 = log_freq[i] - 0.05 #initial 
+            log_freq_t = log_freq[i] + 0.05 #final 
+            for j in range(num_bins - 1):
+                if (log_freq[j] > log_freq_0 and log_freq[j] < log_freq_t):
+                    count   += 1
+                    sum_pwd += psd[j]
+            if count != 0:
+                pwf[i] = sum_pwd / count 
+        spectrum = np.append(0, pwf[:-1])
+        return spectrum 
 
 # Wall shear-stress 
     def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, 
@@ -291,8 +335,25 @@ class Box():
         data_smooth = np.convolve(data_in, box, mode='same')
         return data_smooth 
 
+# Plotting locations 
+    def str_locations(self, mean_loc_dict, x=None, y=None, z=None):
+        if x is None:
+            y_val = mean_loc_dict['mean_y'][y] 
+            z_val = mean_loc_dict['mean_z'][z] 
+            loc_str = f'y = {y_val:.3} $[m]$, z = {z_val:.3} $[m]$'
+        if y is None:
+            x_val = mean_loc_dict['mean_x'][x] 
+            z_val = mean_loc_dict['mean_z'][z] 
+            loc_str = f'x = {x_val:.3} $[m]$, z = {z_val:.3} $[m]$'
+        if z is None:
+            x_val = mean_loc_dict['mean_x'][x] 
+            y_val = mean_loc_dict['mean_y'][y] 
+            loc_str = f'x = {x_val:.3} $[m]$, y = {y_val:.3} $[m]$'
+        return loc_str 
+
 # Van Driest plot 
-    def plot_van_driest(self, van_driest_dict, testing_path=None, saving_path=None): 
+    def plot_van_driest(self, van_driest_dict, testing_path=None, 
+                        saving_path=None): 
         plt.plot(van_driest_dict['mean_y_plus'], 
                  van_driest_dict['mean_u_plus'], 
                  color='k', linestyle='-', linewidth=2) 
