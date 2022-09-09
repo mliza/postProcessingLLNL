@@ -336,7 +336,7 @@ class Box():
         return data_smooth 
 
 # Plotting locations 
-    def str_locations(self, mean_loc_dict, x=None, y=None, z=None):
+    def str_locations(self, mean_loc_dict, x=None, y=None, z=None):  
         if x is None:
             y_val = mean_loc_dict['mean_y'][y] 
             z_val = mean_loc_dict['mean_z'][z] 
@@ -356,11 +356,16 @@ class Box():
                         saving_path=None): 
         plt.plot(van_driest_dict['mean_y_plus'], 
                  van_driest_dict['mean_u_plus'], 
-                 color='k', linestyle='-', linewidth=2) 
+                 color='k', linestyle='-', linewidth=2, marker='o', markersize=5,
+                 markerfacecolor='lightgrey', markeredgecolor='k', 
+                 label='MARGOT') 
+
+        '''
         plt.plot(van_driest_dict['mean_y_plus'], 
                  van_driest_dict['mean_u_plus'], 
                  'o', markersize=5, markerfacecolor='lightgrey', 
                   markeredgecolor='k')
+        '''
 
         if testing_path != None: 
             testing_file = os.path.join(testing_path,
@@ -368,7 +373,8 @@ class Box():
             df           = pd.read_csv(testing_file) 
             y_plus       = np.array(df['y_plus'])
             u_plus       = np.array(df['u_plus'])
-            plt.plot(y_plus, u_plus, linewidth=2, linestyle='-.')
+            plt.plot(y_plus, u_plus, linewidth=2, linestyle='-.', label='Pino')
+            plt.legend() 
         plt.xscale('log')
         plt.grid('-.')
         plt.xlabel('$y^+$')
@@ -527,7 +533,6 @@ class Box():
         boundary_mean = boundary_plane_dict['mean_thickness']  
         X,Y           = np.meshgrid(Z_mean, X_mean)
 
-        #IPython.embed(colors='Linux') 
         #fig = plt.figure(figsize=(8,8))
         fig = plt.figure()
         ax  = fig.add_subplot(111, projection='3d') 
