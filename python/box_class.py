@@ -240,6 +240,7 @@ class Box():
         fluctuation_len = len(fluct_field_1) - 1
         numerator       = np.zeros(autocorrelation_len) 
         denominator     = np.zeros(autocorrelation_len) 
+        radius          -= np.min(radius) 
         autocorrelation_radius = np.linspace(0, np.max(radius), 
                                              autocorrelation_len)
         for i in range(fluctuation_len):
@@ -295,32 +296,34 @@ class Box():
         return spectrum 
 
 # Wall shear-stress 
-    def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, 
-                    saving_path=None):
+    def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, t_mean):
         # Defining wall parameters 
-        rho_w = rho_mean['mean_xy'][:,0] 
-        mu_w  = mu_mean['mean_xy'][:,0] 
+        # Interpolation Eq. 8.4, Computational Fluid Dynamics Principles and
+        # Applications, 3rd by Jiri Blazek 
+        const_a, const_b, const_c = self.three_point_extrapolation(y_mean['mean_xy']) 
+        interp = lambda f: const_a * f[:,0] + const_b * f[:,1] + const_c * f[:,2]
+        rho_w = interp(rho_mean['mean_xy']) 
+        mu_w  = interp(mu_mean['mean_xy']) 
+        T_w   = interp(t_mean['mean_xy'])
+        S12_w = interp(s12_mean['mean_xy'])
         nu_w  = mu_w / rho_w  
-        tau_w = -mu_w * s12_mean['mean_xy'][:,0]
+        tau_w = -mu_w * S12_w 
         u_tau = np.sqrt(np.abs(tau_w / rho_w))  
         # Calculate van driest transformations and returns at each x-position
-        y_plus = np.empty([self.nx, self.ny]) 
-        u_plus = np.empty([self.nx, self.ny]) 
-        mean_u_plus = np.empty(self.ny)
-        mean_y_plus = np.empty(self.ny)
+        y_plus   = np.empty([self.nx, self.ny]) 
+        u_plus   = np.empty([self.nx, self.ny]) 
+        T_plus   = np.empty([self.nx, self.ny]) 
+        rho_plus = np.empty([self.nx, self.ny]) 
         for i in range(self.nx):
-            y_plus[i,:] = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
-            u_plus[i,:] = u_mean['mean_xy'][i,:] / u_tau[i] 
-        # Calculate mean from each x-position 
-        for i in range(self.ny): 
-            mean_y_plus[i] = np.mean(y_plus[:,i]) 
-            mean_u_plus[i] = np.mean(u_plus[:,i]) 
-
+            y_plus[i,:]   = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
+            u_plus[i,:]   = u_mean['mean_xy'][i,:] / u_tau[i] 
+            T_plus[i,:]   = t_mean['mean_xy'][i,:] / T_w[i] 
+            rho_plus[i,:] = rho_mean['mean_xy'][i,:] / rho_w[i]
         # Dictionary 
         van_driest_dict = { 'y_plus'      : y_plus, 
                             'u_plus'      : u_plus, 
-                            'mean_y_plus' : mean_y_plus, 
-                            'mean_u_plus' : mean_u_plus,  
+                            'T_plus'      : T_plus,
+                            'rho_plus'    : rho_plus,
                             'rho_w'       : rho_w, 
                             'mu_w'        : mu_w, 
                             'nu_w'        : nu_w,
@@ -336,44 +339,76 @@ class Box():
         return data_smooth 
 
 # Plotting locations 
-    def str_locations(self, mean_loc_dict, x=None, y=None, z=None):  
-        if x is None:
-            y_val = mean_loc_dict['mean_y'][y] 
-            z_val = mean_loc_dict['mean_z'][z] 
-            loc_str = f'y = {y_val:.3} $[m]$, z = {z_val:.3} $[m]$'
-        if y is None:
-            x_val = mean_loc_dict['mean_x'][x] 
-            z_val = mean_loc_dict['mean_z'][z] 
-            loc_str = f'x = {x_val:.3} $[m]$, z = {z_val:.3} $[m]$'
-        if z is None:
-            x_val = mean_loc_dict['mean_x'][x] 
-            y_val = mean_loc_dict['mean_y'][y] 
-            loc_str = f'x = {x_val:.3} $[m]$, y = {y_val:.3} $[m]$'
+    def str_locations(self, mean_loc_dict, x=None, y=None, 
+                      z=None):  
+        # Count how many None are as input 
+        list  = [x, y, z]
+        count_ = len([count for count in list if count is None])
+        # Return 2D 
+        if count_ == 1:
+            if x is None:
+                y_val = mean_loc_dict['mean_y'][y] 
+                z_val = mean_loc_dict['mean_z'][z] 
+                loc_str = f'y = {y_val:.3} $[m]$, z = {z_val:.3} $[m]$'
+            if y is None:
+                x_val = mean_loc_dict['mean_x'][x] 
+                z_val = mean_loc_dict['mean_z'][z] 
+                loc_str = f'x = {x_val:.3} $[m]$, z = {z_val:.3} $[m]$'
+            if z is None:
+                x_val = mean_loc_dict['mean_x'][x] 
+                y_val = mean_loc_dict['mean_y'][y] 
+                loc_str = f'x = {x_val:.3} $[m]$, y = {y_val:.3} $[m]$'
+        # Return 1D 
+        else:
+            if y is None and z is None:
+                x_val = mean_loc_dict['mean_x'][x] 
+                loc_str = f'x = {x_val:.3} $[m]$'
+            if x is None and z is None:
+                y_val = mean_loc_dict['mean_y'][y] 
+                loc_str = f'y = {y_val:.3} $[m]$'
+            if x is None and y is None:
+                z_val = mean_loc_dict['mean_z'][z] 
+                loc_str = f'z = {z_val:.3} $[m]$'
         return loc_str 
 
+# Legendre interpolation 2nd order 
+    def three_point_extrapolation(self, y_mean):
+        const_a = (y_mean[:,1] * y_mean[:,2] / ( 
+                  (y_mean[:,0] - y_mean[:,1]) * (y_mean[:,0] - y_mean[:,2]) )) 
+        const_b = (y_mean[:,2] * y_mean[:,0] / ( 
+                  (y_mean[:,1] - y_mean[:,2]) * (y_mean[:,1] - y_mean[:,0]) )) 
+        const_c = (y_mean[:,0] * y_mean[:,1] / ( 
+                  (y_mean[:,2] - y_mean[:,0]) * (y_mean[:,2] - y_mean[:,1]) )) 
+        return const_a, const_b, const_c 
+
 # Van Driest plot 
-    def plot_van_driest(self, van_driest_dict, testing_path=None, 
+    def plot_van_driest(self, van_driest_dict, x_, title_in, testing_path=None, 
                         saving_path=None): 
-        plt.plot(van_driest_dict['mean_y_plus'], 
-                 van_driest_dict['mean_u_plus'], 
+        y_p = van_driest_dict['y_plus'][x_,:] 
+        u_p = van_driest_dict['u_plus'][x_,:] 
+        plt.plot(y_p, u_p,
                  color='k', linestyle='-', linewidth=2, marker='o', markersize=5,
                  markerfacecolor='lightgrey', markeredgecolor='k', 
-                 label='MARGOT') 
-
-        '''
-        plt.plot(van_driest_dict['mean_y_plus'], 
-                 van_driest_dict['mean_u_plus'], 
-                 'o', markersize=5, markerfacecolor='lightgrey', 
-                  markeredgecolor='k')
-        '''
+                 label='MARGOT, M10') 
+        u_form = 2.44 * np.log(y_p) + 5.2 
+        u_mine = 6.63 * np.log(y_p) - 6.28
+        u_mine = 2.44 * np.log(y_p) + 8.72
+        plt.plot(y_p, u_form, 's', markersize=2.5, 
+                 label='$2.44\,ln(y^+) + 5.2$') 
+        plt.plot(y_p[:6], y_p[:6],'o',  markersize=2.5, label='$y^+$')  
+        plt.plot(y_p[5:-40], u_mine[5:-40], '-.', markersize=2.5, color='darkred', 
+                 #label='$6.63\,ln(y^+) - 6.28$') 
+                 label='$2.44\,ln(y^+) + 8.72$') 
+        plt.title(title_in)
 
         if testing_path != None: 
             testing_file = os.path.join(testing_path,
-                        'vanDriestTransformation.csv')
+                        'vanDriestTransformation_1fig11.csv')
             df           = pd.read_csv(testing_file) 
             y_plus       = np.array(df['y_plus'])
             u_plus       = np.array(df['u_plus'])
-            plt.plot(y_plus, u_plus, linewidth=2, linestyle='-.', label='Pino')
+            plt.plot(y_plus, u_plus, color='darkorange' ,
+                     linewidth=1.5, linestyle='--', label='Pino, M5')
             plt.legend() 
         plt.xscale('log')
         plt.grid('-.')
@@ -388,6 +423,7 @@ class Box():
             plt.savefig(f'{saving_path}/vanDriestTransformation.png', dpi=300)
             plt.close() 
 
+## DELETE WHEN IT IS DONE ## 
 # Plot boundary Layers 
     def plot_boundary_layers(self, velocity_boundary_dict, 
             temperature_boundary_dict, mean_velocity, mean_temperature, 
