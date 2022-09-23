@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/python3
+#!/opt/homebrew/bin/python3.9
 '''
     Date:   05/24/2022
     Author: Martin E. Liza
@@ -18,8 +18,9 @@ import sys
 import os 
 scripts_path   = os.environ.get('SCRIPTS')
 python_scripts = os.path.join(scripts_path, 'Python')
+fortran_path   = os.path.abspath('../fortran_modules')
 sys.path.append(python_scripts)
-sys.path.append('../fortran_modules')
+sys.path.append(fortran_path)
 # Helper class 
 import helper_class as helper 
 import aerodynamics_class as aero
@@ -221,6 +222,7 @@ if working_flag:
     # List keys 
     fluct_keys = list(fluct_3D.keys()) 
     data_keys  = list(data_in3D.keys()) 
+    IPython.embed(colors ='Linux') 
 
     # Calculate mean fields  
     loc_mean  = box.mean_positions(data_in3D) 

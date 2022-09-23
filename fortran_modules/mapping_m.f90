@@ -4,7 +4,7 @@ subroutine mapping(nx, ny, nz, mapping_path)
     character(len=*), intent(in) :: mapping_path 
     integer :: i, n_max 
     integer, dimension(nx * ny * nz, 4) :: mapping_matrix   
-    character(len=53) mapping_vector 
+    character(len=55) mapping_vector 
     n_max = nx * ny * nz
 
     ! Output file 
