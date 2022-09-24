@@ -5,13 +5,13 @@ subroutine vector_reader(n_max, box_path, temp_path, var_in, time_step)
     integer, intent(in) :: n_max 
     double precision, dimension(n_max) :: x_variable, y_variable, z_variable 
     character(len=*), intent(in) :: box_path, temp_path, var_in, time_step
-    character(len=50) file_in, file_out_x, file_out_y, file_out_z 
+    character(len=80) file_in, file_out_x, file_out_y, file_out_z 
 
     ! Input output grid 
     file_in    = box_path//'/'//var_in//'.'//time_step//'.q'
-    file_out_x = temp_path//'/'//var_in//'x.dat'
-    file_out_y = temp_path//'/'//var_in//'y.dat'
-    file_out_z = temp_path//'/'//var_in//'z.dat'
+    file_out_x = temp_path//'/'//time_step//'_'//var_in//'x.dat'
+    file_out_y = temp_path//'/'//time_step//'_'//var_in//'y.dat'
+    file_out_z = temp_path//'/'//time_step//'_'//var_in//'z.dat'
 
     ! Using cases 
     print *, 'Loading: ', file_in  ! Print statement  

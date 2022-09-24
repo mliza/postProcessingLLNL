@@ -23,7 +23,7 @@ sys.path.append(python_scripts)
 sys.path.append(fortran_path)
 # Helper class 
 import helper_class as helper 
-import aerodynamics_class as aero
+#import aerodynamics_class as aero
 import box_class as box  
 import box_plots 
 # Fortran subroutines 
@@ -33,57 +33,97 @@ import f_scalarReader
 import f_vectorReader
 
 # User Inputs 
-data_path    = '../../plate_data/data_15'
-pickle_path  = os.path.join(data_path, 'pickle_n')
-temp_path    = os.path.join(data_path, 'temp_data_n')  
+#data_path    = '../../plate_data/data_15'
+data_path    = '/p/lustre1/liza1/dns_margot'
+pickle_path  = os.path.join(data_path, 'pickle')
+temp_path    = os.path.join(data_path, 'temp_data')  
 box_path     = os.path.join(data_path, 'BOX')  
 nx           = 1439
 ny           = 89
 nz           = 638 
 time_step    = '0930000' #This will changing for each time step 
-fortran_flag = False  
 mapping_flag = False  
-writing_flag = False   
-working_flag = True  
-add_dat_flag = False 
-fluct_flag   = False 
-rms_flag     = False 
-scalar_in    = [ 'T', 'RHO', 'P',
-                 'RHOE', 'GRADRHOMAG', 
-                 'GRADV_11', 'GRADV_12', 'GRADV_13',
-                 'GRADV_21', 'GRADV_22', 'GRADV_23',
-                 'GRADV_31', 'GRADV_32', 'GRADV_33' ]
 
 # Loading my classes 
 helper = helper.Helper()
-aero   = aero.Aero()
+#aero   = aero.Aero()
 box    = box.Box(nx=nx, ny=ny, nz=nz)
 
 # Using Fortran subroutines 
 # Convert fortran binaries into python readable and creates the mapping file 
 n_max = nx * ny * nz
-f_mapping.mapping(nx, ny, nz, temp_path)
+# Only runs the mapping flag if there is not mapping vector 
+if mapping_flag:
+    f_mapping.mapping(nx, ny, nz, temp_path)
 f_gridReader.grid_reader(n_max, box_path, temp_path, 'U') 
-IPython.embed(colors = 'Linux')
-#for i in time_step: 
-i = time_step 
-
-f_vectorReader.vector_reader(n_max, box_path, temp_path, 'U', i) 
 
 # For HPC 
-files_in   = os.listdir(box_path)
-steps_in = [idx for idx in files_in if idx.startswith('U')]
-steps_in.remove('U.xyz')
-steps_in.remove('U.README')
+files_in = os.listdir(box_path)
+# List time steps 
+steps_lst = [idx for idx in files_in if idx.startswith('U')]
+steps_lst.remove('U.xyz')
+steps_lst.remove('U.README')
 time_steps = [ ] 
-for i in steps_in: time_steps.append(i.split('.')[1])
+for i in steps_lst: time_steps.append(i.split('.')[1])
+time_steps.sort() 
+
+# List scalar fields 
+scalar_fields = [ ]
+scalar_lst    = [idx for idx in files_in if time_steps[0] in idx]
+for i in scalar_lst: scalar_fields.append(i.split('.')[0])
+scalar_fields.remove('U')
+scalar_fields.sort() 
+
+# Loading mapping  
+if mapping_flag:
+    print('Loading fortran mapping and saving as a pickle file')
+    mapping_file_in = os.path.join(temp_path, 'mappingVector.dat') 
+    mapping         = box.mapping_reader(mapping_data_in=mapping_file_in, 
+                                         pickle_path=pickle_path) 
+else:
+    print('Loading pickle mapping') 
+    mapping = helper.pickle_manager(pickle_name_file='mapping', 
+                                        pickle_path=pickle_path)
+
+
+# Create grid dictionary with the positions
+grid_in   = ['X', 'Y', 'Z']
+grid_dict = { }
+print('Processing grid data')
+for i in grid_in:
+    print(f'Processing {i}') 
+    tmp_array1D = helper.fortran_data_loader(variable_in=f'{i}.dat',  
+                                                abs_path_in=temp_path) 
+    grid_dict[i]  = box.split_plot3D(array_1D=tmp_array1D, mapping=mapping)
+    os.remove(os.path.join(temp_path, f'{i}.dat') 
+helper.pickle_manager(pickle_name_file=f'grid_3D', pickle_path=pickle_path,
+                          data_to_save=grid_dict)
+
+# Loading 
+for i in time_steps:
+    f_vectorReader.vector_reader(n_max, box_path, temp_path, 'U', i) 
+    dict_3D = { }
+    for j in scalar_fields:
+        # Creates temp files 
+        f_scalarReader.scalar_reader(n_max, box_path, 
+                                     temp_path, j, i)
+
+        # Loads 1D array, splits data in 3D and saves it
+        tmp_array1D = helper.fortran_data_loader(variable_in=f'{i}_{j}.dat',  
+                                                abs_path_in=temp_path) 
+        print(f'Processing: {i}_{j}')
+        dict_3D[j]  = box.split_plot3D(array_1D=tmp_array1D, mapping=mapping)
+        os.remove(os.path.join(temp_path, f'{i}_{j}.dat') 
+
+    helper.pickle_manager(pickle_name_file=f'{i}_dict3D', pickle_path=pickle_path,
+                          data_to_save=dict_3D)
 
 
 
 
 
 
-
+'''
 # Use fortran subroutines 
 if fortran_flag:
     n_max = nx * ny * nz
@@ -220,3 +260,4 @@ if working_flag:
     # List keys 
     fluct_keys = list(fluct_3D.keys()) 
     data_keys  = list(data_in3D.keys()) 
+'''

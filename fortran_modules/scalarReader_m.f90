@@ -5,11 +5,11 @@ subroutine  scalar_reader(n_max, box_path, temp_path, var_in, time_step)
     integer, intent(in) :: n_max
     double precision, dimension(n_max) :: scalar_variable 
     character(len=*), intent(in) :: box_path, temp_path, var_in, time_step
-    character(len=60) file_in, file_out 
+    character(len=80) file_in, file_out 
 
     ! Input output grid 
     file_in  = box_path//'/'//var_in//'.'//time_step//'.q'
-    file_out = temp_path//'/'//var_in//'.dat'
+    file_out = temp_path//'/'//time_step//'_'//var_in//'.dat'
 
     print *, 'Loading: ', file_in  ! Print statement  
     open(unit=7, file=file_in, & 
