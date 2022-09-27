@@ -75,21 +75,21 @@ class Box():
 
 # NOTE: Rename in C++ SHEAR for GRADU
 # Return a dictionary with gradient fields 
-    def gradient_fields(self, array_dict_1D):  
-        omega_x    = 1/2 * (array_dict_1D['GRADV_23'] - 
-                            array_dict_1D['GRADV_32'])  
-        omega_y    = 1/2 * (array_dict_1D['GRADV_31'] - 
-                            array_dict_1D['GRADV_13']) 
-        omega_z    = 1/2 * (array_dict_1D['GRADV_12'] - 
-                            array_dict_1D['GRADV_21']) 
-        u_x        = array_dict_1D['Ux'] 
-        u_y        = array_dict_1D['Uy'] 
-        u_z        = array_dict_1D['Uz'] 
+    def gradient_fields(self, array_dict3D):  
+        omega_x    = 1/2 * (array_dict3D['GRADV_23'] - 
+                            array_dict3D['GRADV_32'])  
+        omega_y    = 1/2 * (array_dict3D['GRADV_31'] - 
+                            array_dict3D['GRADV_13']) 
+        omega_z    = 1/2 * (array_dict3D['GRADV_12'] - 
+                            array_dict3D['GRADV_21']) 
+        u_x        = array_dict3D['Ux'] 
+        u_y        = array_dict3D['Uy'] 
+        u_z        = array_dict3D['Uz'] 
         vort_mag   = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
         u_mag      = np.sqrt(u_x**2 + u_y**2 + u_z**2) 
-        dilatation = (array_dict_1D['GRADV_11'] + 
-                      array_dict_1D['GRADV_22'] + 
-                      array_dict_1D['GRADV_33']) 
+        dilatation = (array_dict3D['GRADV_11'] + 
+                      array_dict3D['GRADV_22'] + 
+                      array_dict3D['GRADV_33']) 
         enstrophy = 2 * vort_mag * vort_mag 
 
         # Equation from donzis (missing mu multiply results by mu)

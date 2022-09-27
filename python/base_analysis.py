@@ -40,6 +40,7 @@ scripts_path = os.environ.get('SCRIPTS')
 python_scripts = os.path.join(scripts_path, 'Python') 
 sys.path.insert(1, python_scripts)
 import helper_class  
+IPython.embed(colors = 'Linux') 
 
 class Base_Analysis:
     # Global class variables 
