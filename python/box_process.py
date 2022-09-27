@@ -6,7 +6,7 @@
     Def:    Main file to process box data. 
 
     Author		    Date		Revision
-    ----------------------------------------------------
+    ----------------------------------------------
     Martin E. Liza	07/22/2022	Initial version.
 '''
 import IPython 
@@ -158,7 +158,7 @@ for i in time_steps:
         print(f'RMS data: {i}_{k}')
         rms_2D[k] = box.mean_fields(fluct_3D[k]**2)['mean_xy'] 
 
-    # Turbulent Kinetic enrgy and Mt  in rms_2D
+    # Turbulent Kinetic energy and Mt  in rms_2D
     rms_2D['TKE'] = 0.5 * (rms_2D['Ux'] + rms_2D['Uy'] + rms_2D['Uz']) 
     rms_2D['Mt']  = np.sqrt(2 * rms_2D['TKE']) / rms_2D['SoS']  
 

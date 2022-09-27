@@ -272,10 +272,9 @@ class Box():
         return correlation_dict
 
 # Energy Spectrum 
-    def energy_spectrum(self, radius, kinetic_energy, n_bins=2):
+    def energy_spectrum(self, kinetic_energy, n_bins=2):
         ke_hat   = fft(kinetic_energy, self.nx) 
         psd      = (ke_hat * np.conj(ke_hat) / self.nx).real #Power Spectral Density
-        k_vec    = 1 / radius 
         num_bins = int(np.floor(self.nx / n_bins) + 1)
         bin_vec  = range(1, num_bins + 1)
         pwf      = np.zeros(num_bins)
