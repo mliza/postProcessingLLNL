@@ -39,6 +39,7 @@ ny                = 89
 nz                = 638 
 mapping_flag      = False  
 grid_flag         = False
+time_flag         = False  
 a                 = 85
 b                 = 84
 
@@ -61,12 +62,22 @@ if grid_flag:
 files_in = os.listdir(box_path)
 
 # List time steps and creates a vector 
-steps_lst = [idx for idx in files_in if idx.startswith('U')]
-steps_lst.remove('U.xyz')
-steps_lst.remove('U.README')
-time_steps = [ ] 
-for i in steps_lst: time_steps.append(i.split('.')[1])
-time_steps.sort() 
+if time_flag:
+    steps_lst = [idx for idx in files_in if idx.startswith('U')]
+    steps_lst.remove('U.xyz')
+    steps_lst.remove('U.README')
+    time_steps = [ ] 
+    for i in steps_lst: time_steps.append(i.split('.')[1])
+    time_steps.sort() 
+    # Saving a time vector  
+    helper.pickle_manager(pickle_name_file='time_steps', 
+                              pickle_path=pickle_path,
+                              data_to_save=time_steps)
+else:
+    time_steps = helper.pickle_manager(pickle_name_file='time_steps', 
+                                       pickle_path=pickle_path)
+
+# For running multiple times 
 time_steps = time_steps[a:b]  # cutting processing time 
 
 # List scalar fields and create as a vector  
