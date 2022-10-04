@@ -19,7 +19,7 @@ sys.path.append(python_scripts)
 import helper_class as helper 
 
 # Plot energy cascade 
-def energy_cascade(energy_cascade, title_str, y_plus_str, 
+def energy_cascade(energy_cascade, title_str, y_plus_str='y', 
                    p_factor=-5/3, shifting_factor=9E11, 
                    saving_path=None):
     wave_vector = np.array(range(10, 
@@ -74,29 +74,29 @@ def correlation(correlation_dict, correlation_function, title_str,
         plt.close() 
 
 # Plot Boundary Layers 
-def boundary_layers(velocity_boundary_dict, temperature_boundary_dict,
-                    grid_mean_dict, saving_path=None):
+def boundary_layers(mean_velocity_thickness, mean_temperature_thickness,
+                    mean_x, saving_path=None):
     # Loading variables 
     helper_scripts  = helper.Helper()
     n_box           = 50  
-    temp_mean_thick = temperature_boundary_dict['mean_edge_thickness'] * 10**3
-    vel_mean_thick  = velocity_boundary_dict['mean_edge_thickness'] * 10**3
-    x_mean          = grid_mean_dict['mean_x'] * 10**2
+    mean_temperature_thickness *= 10**3
+    mean_velocity_thickness    *= 10**3
+    mean_x                     *= 10**2
     v_color         = 'mediumturquoise' 
     t_color         = 'darkorange'
-    temp_smooth     = helper_scripts.smoothing_function(temp_mean_thick, n_box) 
-    vel_smooth      = helper_scripts.smoothing_function(vel_mean_thick, n_box) 
+    temp_smooth     = helper_scripts.smoothing_function(mean_temperature_thickness, n_box) 
+    vel_smooth      = helper_scripts.smoothing_function(mean_velocity_thickness, n_box) 
     n_box           /= 2
     n_box           = int(n_box) 
 
     # Plot thickness 
-    plt.plot(x_mean, vel_mean_thick, 'o', markersize=3,
+    plt.plot(mean_x, mean_velocity_thickness, 'o', markersize=3,
             markerfacecolor='lightgrey', markeredgecolor='k') 
-    plt.plot(x_mean[n_box:-n_box], vel_smooth[n_box:-n_box], color=v_color, 
+    plt.plot(mean_x[n_box:-n_box], vel_smooth[n_box:-n_box], color=v_color, 
              linestyle='-', linewidth=1.5, label='$U_x$')
-    plt.plot(x_mean, temp_mean_thick, 'o', markersize=3, 
+    plt.plot(mean_x, mean_temperature_thickness, 'o', markersize=3, 
             markerfacecolor='lightgrey', markeredgecolor='k')
-    plt.plot(x_mean[n_box:-n_box], temp_smooth[n_box:-n_box], color=t_color, 
+    plt.plot(mean_x[n_box:-n_box], temp_smooth[n_box:-n_box], color=t_color, 
              linestyle='-', linewidth=1.5, label='$T$') 
     plt.legend()
     plt.ylabel('y-axis [mm]')

@@ -73,7 +73,6 @@ class Box():
             array_3D[i,j,k] = array_1D[n]  
         return array_3D
 
-# NOTE: Rename in C++ SHEAR for GRADU
 # Return a dictionary with gradient fields 
     def gradient_fields(self, array_dict3D):  
         omega_x    = 1/2 * (array_dict3D['GRADV_23'] - 
@@ -156,25 +155,6 @@ class Box():
 
         return edge_dict 
 
-# Wall properties 
-    def wall_properties(self, array_field3D, array_height3D):
-        wall_dict      = { }
-        wall_field     = array_field3D[:,0,:]  
-        wall_thickness = array_height3D[:,0,:]
-        # Calculate the mean (compress on z, assume frozen flow)  
-        mean_wall_thickness = np.empty(self.nx)
-        mean_wall_field     = np.empty(self.nx)
-        for i in range(self.nx):
-            mean_wall_thickness[i] = np.mean(wall_thickness[i,:])
-            mean_wall_field[i]     = np.mean(wall_field[i,:])
-        # Dictionary to return 
-        wall_dict['wall_field']          = wall_field 
-        wall_dict['wall_thickness']      = wall_thickness 
-        wall_dict['mean_wall_thickness'] = mean_wall_thickness
-        wall_dict['mean_wall_field']     = mean_wall_field  
-
-        return wall_dict 
-
 # Calculates fluctuation fields in a given 3D data set, 
 # assume frozen flow hypothesis on z, and returns a 
 # 2D field as a function of x and y.  
@@ -224,15 +204,6 @@ class Box():
                 for k in range(self.nz):
                     decomp_3D[i,j,k] = array_3D[i,j,k] - mean_var 
         return decomp_3D
-
-# Reynolds stress structure parameters
-    def reynolds_stress_structure_parameters(self, fluctuation_1D):
-        u_x     = fluctuation_1D['Ux']
-        u_y     = fluctuation_1D['Uy']
-        u_z     = fluctuation_1D['Uz']
-        k       = fluctuation_1D['K'] 
-        rssp_1D = (2 * (u_x * u_y + u_y * u_z + u_x * u_z) + k) / k
-        return rssp_1D
 
 # Auto correlation 
     def correlation_function(self, radius, fluct_field_1, fluct_field_2,  
@@ -296,31 +267,50 @@ class Box():
 
 # Wall shear-stress 
     def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, t_mean):
-        # Defining wall parameters 
-        # Interpolation Eq. 8.4, Computational Fluid Dynamics Principles and
-        # Applications, 3rd by Jiri Blazek 
-        const_a, const_b, const_c = self.three_point_extrapolation(y_mean['mean_xy']) 
-        interp = lambda f: const_a * f[:,0] + const_b * f[:,1] + const_c * f[:,2]
-        rho_w = interp(rho_mean['mean_xy']) 
-        mu_w  = interp(mu_mean['mean_xy']) 
-        T_w   = interp(t_mean['mean_xy'])
-        S12_w = interp(s12_mean['mean_xy'])
+        # Three Point interpolation to calculate results at the wall
+        rho_w = self.three_point_extrapolation(y_mean['mean_xy'], 
+                                               rho_mean['mean_xy'], 
+                                               y_loc=0.0) 
+        mu_w  = self.three_point_extrapolation(y_mean['mean_xy'], 
+                                               mu_mean['mean_xy'], 
+                                               y_loc=0.0)
+        T_w   = self.three_point_extrapolation(y_mean['mean_xy'], 
+                                               t_mean['mean_xy'], 
+                                               y_loc=0.0)
+        S12_w = self.three_point_extrapolation(y_mean['mean_xy'], 
+                                               s12_mean['mean_xy'], 
+                                               y_loc=0.0)
+        u_1   = self.three_point_extrapolation(y_mean['mean_xy'], 
+                                               u_mean['mean_xy'], 
+                                               y_loc=-y_mean['mean_xy'][:,0])
+        # Second order Central Difference 
+        S12_wi = (u_mean['mean_xy'][:,0] - u_1) / (2 * y_mean['mean_xy'][:,0]) 
+
+        # Calculate wall properties 
         nu_w  = mu_w / rho_w  
         tau_w = -mu_w * S12_w 
+        tau_wi = -mu_w * S12_wi 
         u_tau = np.sqrt(np.abs(tau_w / rho_w))  
+        ui_tau = np.sqrt(np.abs(tau_wi / rho_w))  
         # Calculate van driest transformations and returns at each x-position
         y_plus   = np.empty([self.nx, self.ny]) 
+        yi_plus   = np.empty([self.nx, self.ny]) 
         u_plus   = np.empty([self.nx, self.ny]) 
+        ui_plus   = np.empty([self.nx, self.ny]) 
         T_plus   = np.empty([self.nx, self.ny]) 
         rho_plus = np.empty([self.nx, self.ny]) 
         for i in range(self.nx):
             y_plus[i,:]   = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
+            yi_plus[i,:]   = ui_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
             u_plus[i,:]   = u_mean['mean_xy'][i,:] / u_tau[i] 
+            ui_plus[i,:]   = u_mean['mean_xy'][i,:] / ui_tau[i] 
             T_plus[i,:]   = t_mean['mean_xy'][i,:] / T_w[i] 
             rho_plus[i,:] = rho_mean['mean_xy'][i,:] / rho_w[i]
         # Dictionary 
         van_driest_dict = { 'y_plus'      : y_plus, 
+                            'yi_plus'     : yi_plus, 
                             'u_plus'      : u_plus, 
+                            'ui_plus'      : ui_plus, 
                             'T_plus'      : T_plus,
                             'rho_plus'    : rho_plus,
                             'rho_w'       : rho_w, 
@@ -371,14 +361,36 @@ class Box():
         return loc_str 
 
 # Legendre interpolation 2nd order 
-    def three_point_extrapolation(self, y_mean):
-        const_a = (y_mean[:,1] * y_mean[:,2] / ( 
+    def three_point_extrapolation(self, y_mean, f_mean, y_loc=0):
+        # Legendre Constants 
+        const_a  = ( (y_loc - y_mean[:,1]) * (y_loc - y_mean[:,2]) / ( 
                   (y_mean[:,0] - y_mean[:,1]) * (y_mean[:,0] - y_mean[:,2]) )) 
-        const_b = (y_mean[:,2] * y_mean[:,0] / ( 
+
+        const_b  = ( (y_loc - y_mean[:,2]) * (y_loc - y_mean[:,0]) / ( 
                   (y_mean[:,1] - y_mean[:,2]) * (y_mean[:,1] - y_mean[:,0]) )) 
-        const_c = (y_mean[:,0] * y_mean[:,1] / ( 
+
+        const_c  = ( (y_loc - y_mean[:,0]) * (y_loc - y_mean[:,1]) / ( 
                   (y_mean[:,2] - y_mean[:,0]) * (y_mean[:,2] - y_mean[:,1]) )) 
-        return const_a, const_b, const_c 
+
+        # Extrapolation
+        extrapolation = ( const_a * f_mean[:,0] + 
+                          const_b * f_mean[:,1] + 
+                          const_c * f_mean[:,2] )
+        return extrapolation 
+
+# Time average 
+    def time_average(self, field_matrix, sub_sample=None):
+        # field_matrix = [time, elements]
+        [time_len, element_len] = np.shape(field_matrix)
+        average_field           = np.empty(element_len)
+        if sub_sample is None:
+            for i in range(element_len):
+                average_field[i] = np.mean(field_matrix[:,i])
+        else: 
+            for i in range(0, element_len, sub_sample):
+                average_field[i] = np.mean(field_matrix[:,i])
+
+        return average_field 
 
 # Van Driest plot 
     def plot_van_driest(self, van_driest_dict, x_, title_in, testing_path=None, 
