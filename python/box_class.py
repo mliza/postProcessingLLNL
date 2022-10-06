@@ -243,10 +243,16 @@ class Box():
         return correlation_dict
 
 # Energy Spectrum 
-    def energy_spectrum(self, kinetic_energy, n_bins=2):
-        ke_hat   = fft(kinetic_energy, self.nx) 
-        psd      = (ke_hat * np.conj(ke_hat) / self.nx).real #Power Spectral Density
-        num_bins = int(np.floor(self.nx / n_bins) + 1)
+    def energy_spectrum(self, Ux, Uy, Uz, n_elements, n_bins=2):
+        # Convert inputs to fourrier space 
+        u_hat    = fft(Ux, n_elements)
+        v_hat    = fft(Uy, n_elements)
+        w_hat    = fft(Uz, n_elements)
+        # Power Spectral Density 
+        psd      = ( (u_hat * np.conj(u_hat) / n_elements).real + 
+                     (v_hat * np.conj(v_hat) / n_elements).real + 
+                     (w_hat * np.conj(w_hat) / n_elements).real ) 
+        num_bins = int(np.floor(n_elements / n_bins) + 1)
         bin_vec  = range(1, num_bins + 1)
         pwf      = np.zeros(num_bins)
         log_freq = np.log10(bin_vec) 
@@ -379,16 +385,13 @@ class Box():
         return extrapolation 
 
 # Time average 
-    def time_average(self, field_matrix, sub_sample=None):
+    def time_average(self, field_matrix, sub_sample_spacing=1):
         # field_matrix = [time, elements]
         [time_len, element_len] = np.shape(field_matrix)
         average_field           = np.empty(element_len)
-        if sub_sample is None:
-            for i in range(element_len):
-                average_field[i] = np.mean(field_matrix[:,i])
-        else: 
-            for i in range(0, element_len, sub_sample):
-                average_field[i] = np.mean(field_matrix[:,i])
+        sub_sample_time         = range(0, time_len, sub_sample_spacing) 
+        for i in range(element_len):
+            average_field[i] = np.mean(field_matrix[sub_sample_time, i])
 
         return average_field 
 
