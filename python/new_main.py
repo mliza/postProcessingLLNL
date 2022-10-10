@@ -97,15 +97,21 @@ for count, val in enumerate(time_steps):
         fluct_3D = helper.pickle_manager(pickle_name_file=f'{val}_fluct3D', 
                                      pickle_path=fluct_pickle_path)
     if procced_flag:
+        field_3D = helper.pickle_manager(pickle_name_file=f'{val}_dict3D', 
+                                     pickle_path=pickle_path)
         proc_3D  = helper.pickle_manager(pickle_name_file=f'{val}_processed',
                                          pickle_path=results_path)
+        '''
+        fluct_3D = helper.pickle_manager(pickle_name_file=f'{val}_fluct3D', 
+                                     pickle_path=fluct_pickle_path)
+        '''
 
         # Calculate energy cascade and Van Driest 
         van_driest     = proc_3D['vanDriest'] 
-        energy_cascade = box.energy_spectrum(fluct_3D['Ux'][x_,y_,:], 
-                                             fluct_3D['Uy'][x_,y_,:],
-                                             fluct_3D['Uz'][x_,y_,:],
-                                             n_elements=ny, 
+        energy_cascade = box.energy_spectrum(field_3D['Ux'][x_,y_,:], 
+                                             field_3D['Uy'][x_,y_,:],
+                                             field_3D['Uz'][x_,y_,:],
+                                             n_elements=nz, 
                                              n_bins=2)
         # Initialize at the first iteration
         if count == 0:
@@ -178,10 +184,8 @@ for count, val in enumerate(time_steps):
         # DELETE ME ## 
 
         # Calculate the energy cascade 
-        TKE = 0.5 * (fluct_3D['Ux']**2 + fluct_3D['Uy']**2 + fluct_3D['Uz']**2) 
 
         # Add data to the dictionary 
-        dict_out['TKE']             = TKE 
         dict_out['velocityEdge']    = velocity_edge 
         dict_out['temperatureEdge'] = temperature_edge 
         dict_out['vanDriest']       = van_driest
@@ -196,7 +200,6 @@ if procced_flag:
     velocity_thickness    = box.time_average(velocity_thickness_matrix)
     temperature_mean      = box.time_average(temperature_matrix)
     temperature_thickness = box.time_average(temperature_thickness_matrix)
-    #energy_spectrum_mean  = 10 ** box.time_average(np.log(energy_spectrum_matrix))
     energy_spectrum_mean  = box.time_average(energy_spectrum_matrix)
     van_driest_mean       = { }
     # Iterates through van driest dictionary  
@@ -209,6 +212,7 @@ if procced_flag:
                   'temperature_mean'       : temperature_mean,
                   'temperature_thickness'  : temperature_thickness,
                   'energy_spectrum'        : energy_spectrum_mean,
+                  'energy_spectrum_matrix' : energy_spectrum_matrix, 
                   'van_driest'             : van_driest_mean}
 
     helper.pickle_manager(pickle_name_file='time_average',
@@ -219,6 +223,6 @@ if procced_flag:
     box_plots.boundary_layers(velocity_thickness, temperature_thickness, 
                              mean_grid['mean_x'], saving_path=results_path) 
     box_plots.energy_cascade(energy_spectrum_mean, xy_str, y_plus_str, 
-                            shifting_factor=9E11,saving_path=results_path)
+                            shifting_factor=2E7,saving_path=results_path)
                             #shifting_factor=2E23,saving_path=results_path)
 
