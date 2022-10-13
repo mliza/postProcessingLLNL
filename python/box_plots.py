@@ -21,7 +21,7 @@ import helper_class as helper
 # Plot energy cascade 
 def energy_cascade(energy_cascade, title_str, y_plus_str='y', 
                    p_factor=-5/3, shifting_factor=9E11, 
-                   saving_path=None):
+                   saving_path=None, fig_name=None):
     wave_vector = np.array(range(10, 
                           int(np.floor(2 * len(energy_cascade)) / 15))) 
     plt.title(title_str)
@@ -39,7 +39,10 @@ def energy_cascade(energy_cascade, title_str, y_plus_str='y',
 
     if saving_path != None:
         plt.tight_layout()
-        plt.savefig(f'{saving_path}/energy_spectrum.png', dpi=300) 
+        if fig_name == None:
+            plt.savefig(f'{saving_path}/energy_spectrum.png', dpi=300) 
+        if fig_name != None:
+            plt.savefig(f'{saving_path}/{fig_name}.png', dpi=300) 
         plt.close() 
 
 # Plot correlation 
@@ -78,7 +81,7 @@ def boundary_layers(mean_velocity_thickness, mean_temperature_thickness,
                     mean_x, saving_path=None):
     # Loading variables 
     helper_scripts  = helper.Helper()
-    n_box           = 50  
+    n_box           = 50 
     mean_temperature_thickness *= 10**3
     mean_velocity_thickness    *= 10**3
     mean_x                     *= 10**2

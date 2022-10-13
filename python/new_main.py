@@ -39,11 +39,17 @@ T_init            = 216.66      #[K]
 RHO_init          = 0.18874     #[kg/m3] 
 P_init            = 11737       #[Pa] 
 X_init            = 11.5970E-2  #[m]
-x_                = int(nx/2)
-y_                = int(ny/2)
+x_                = int(nx/2) 
+y_                = int(ny/2) 
 z_                = int(nz/2)
+xn                = 'x2'
+yn                = 'y2'
+energy_name       = f'energy_spectrum_{xn}{yn}'
 procced_flag      = True 
 new_data_flag     = False   
+
+# x_ = [0.06, 0.105, 0.140] => [0, nx/2, 1290]
+# y_ = [0.001, 0.00269] => [3, ny/2] 
 
 # Loading my classes 
 helper = helper.Helper()
@@ -65,7 +71,9 @@ sos_2 = aero.speed_of_sound(T_2)              #[m/s]
 U_2   = oblique_dict['mach_2'] * sos_2        #[m/s]
 Rho_2 = RHO_init * oblique_dict['Rho_ratio']  #[kg/m3] 
 M_2   = U_2 / sos_2                           #[ ]
-# Print statemts 
+
+# Print statments  
+print(f'{x_} = {xn}, {y_} = {yn}') 
 print(f'The unit Re is {re_init:.6E} [1/m]')
 print(f'The post shock temperature is {T_2:.3} [K]')  
 print(f'The post shock mach is {M_2:.2} [ ]')  
@@ -101,6 +109,7 @@ for count, val in enumerate(time_steps):
                                      pickle_path=pickle_path)
         proc_3D  = helper.pickle_manager(pickle_name_file=f'{val}_processed',
                                          pickle_path=results_path)
+        IPython.embed(colors = 'Linux') 
         '''
         fluct_3D = helper.pickle_manager(pickle_name_file=f'{val}_fluct3D', 
                                      pickle_path=fluct_pickle_path)
@@ -215,14 +224,15 @@ if procced_flag:
                   'energy_spectrum_matrix' : energy_spectrum_matrix, 
                   'van_driest'             : van_driest_mean}
 
-    helper.pickle_manager(pickle_name_file='time_average',
+    helper.pickle_manager(pickle_name_file=f'time_average_{xn}{yn}',
                           pickle_path=results_path,
                           data_to_save=dict_out)
     # Plots 
     y_plus_str = f'$y^+$ = {van_driest_mean["y_plus"][y_]/10:.3}'
     box_plots.boundary_layers(velocity_thickness, temperature_thickness, 
                              mean_grid['mean_x'], saving_path=results_path) 
-    box_plots.energy_cascade(energy_spectrum_mean, xy_str, y_plus_str, 
-                            shifting_factor=2E7,saving_path=results_path)
+    box_plots.energy_cascade(energy_spectrum_mean[2:], xy_str, y_plus_str, 
+                            shifting_factor=2E7,saving_path=results_path, 
+                            fig_name=energy_name)
                             #shifting_factor=2E23,saving_path=results_path)
 

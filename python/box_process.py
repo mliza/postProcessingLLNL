@@ -49,19 +49,21 @@ aero   = aero.Aero()
 box    = box.Box(nx=nx, ny=ny, nz=nz)
 
 # Using Fortran subroutines 
-# Convert fortran binaries into python readable and creates the mapping file 
+# Convert fortran binaries into python readable files and creates the mapping file 
 n_max = nx * ny * nz
-# Run the mapping flag only once 
+
+# Run the mapping flag (run this once)
 if mapping_flag:
     f_mapping.mapping(nx, ny, nz, temp_path)
-# Run the grid flag only once 
+
+# Run the grid flag (only once)
 if grid_flag:
     f_gridReader.grid_reader(n_max, box_path, temp_path, 'U') 
 
 # List all files in box folder 
 files_in = os.listdir(box_path)
 
-# List time steps and creates a vector 
+# List all time steps and creates a vector (run this once)
 if time_flag:
     steps_lst = [idx for idx in files_in if idx.startswith('U')]
     steps_lst.remove('U.xyz')

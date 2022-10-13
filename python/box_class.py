@@ -75,32 +75,46 @@ class Box():
 
 # Return a dictionary with gradient fields 
     def gradient_fields(self, array_dict3D):  
-        omega_x    = 1/2 * (array_dict3D['GRADV_23'] - 
-                            array_dict3D['GRADV_32'])  
-        omega_y    = 1/2 * (array_dict3D['GRADV_31'] - 
-                            array_dict3D['GRADV_13']) 
-        omega_z    = 1/2 * (array_dict3D['GRADV_12'] - 
-                            array_dict3D['GRADV_21']) 
-        u_x        = array_dict3D['Ux'] 
-        u_y        = array_dict3D['Uy'] 
-        u_z        = array_dict3D['Uz'] 
-        vort_mag   = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
-        u_mag      = np.sqrt(u_x**2 + u_y**2 + u_z**2) 
-        dilatation = (array_dict3D['GRADV_11'] + 
-                      array_dict3D['GRADV_22'] + 
-                      array_dict3D['GRADV_33']) 
-        enstrophy = 2 * vort_mag * vort_mag 
+        # U magnitude  
+        u_mag      = np.sqrt(array_dict3D['Ux']**2 + 
+                             array_dict3D['Ux']**2 + 
+                             array_dict3D['Uz']**2) 
 
-        # Equation from donzis (missing mu multiply results by mu)
-        #disipation_solenoidal  = vort_mag**2 
-        #dissipation_dilatation = 4/3 * dilatation  
-        gradient_dict = { 'VortX'     : omega_x, 
-                          'VortY'     : omega_y, 
-                          'VortZ'     : omega_z,  
-                          'VORTMAG'   : vort_mag,  
-                          'DIL'       : dilatation, 
-                          'ENSTROPHY' : enstrophy, 
-                          'UMAG'      : u_mag}
+        # GRADV_ij = du_j/dx_i = d_i u_j  (not jacobian) 
+        # Rotation_ij = 1/2 (grad_ij - grad_ji)
+        rotation_zy = 1/2 * (array_dict3D['GRADV_32'] - array_dict3D['GRADV_23'])  
+        rotation_xz = - 1/2 * (array_dict3D['GRADV_13'] - array_dict3D['GRADV_31']) 
+        rotation_xy = 1/2 * (array_dict3D['GRADV_12'] - array_dict3D['GRADV_21']) 
+
+        # Strain_ij = 1/2 (grad_ij + grad_ji)
+        strain_xy = 1/2 * (array_dict3D['GRADV_12'] + array_dict3D['GRADV_21']) 
+        strain_xz = 1/2 * (array_dict3D['GRADV_13'] + array_dict3D['GRADV_31'])  
+        strain_zy = 1/2 * (array_dict3D['GRADV_32'] + array_dict3D['GRADV_23']) 
+
+        # Fibonacci Norm square ||A|| = sqrt(sum |a_ij|^2) 
+        # Norms are fibonacy norm square  
+        rotation_norm   = ( (2 * rotation_zy)**2 + 
+                            (2 * rotation_xz)**2 + 
+                            (2 * rotation_xy)**2 )
+        shear_norm      = ( (2 * strain_xy)**2 + 
+                            (2 * strain_xz)**2 + 
+                            (2 * strain_zy)**2 )
+        dilatation_norm = ( array_dict3D['GRADV_11']**2 + 
+                            array_dict3D['GRADV_22']**2 + 
+                            array_dict3D['GRADV_33']**2 ) 
+
+        # Return as if the gradient was a jacobian (this is why negative signs) 
+        gradient_dict = { 'rotation_norm'   : rotation_norm, 
+                          'shear_norm'      : shear_norm,
+                          'dilatation_norm' : dilatation_norm,
+                          'ratation_zy'     : -rotation_zy,
+                          'ratation_xz'     : -rotation_xz,
+                          'ratation_xy'     : -rotation_xy,
+                          'shear_xy'        : strain_xy,
+                          'shear_xz'        : strain_xz,
+                          'shear_zy'        : strain_zy,
+                          'UMAG'            : u_mag }
+
         return gradient_dict 
 
 # Return fluctuation fields 
@@ -272,7 +286,7 @@ class Box():
         return spectrum 
 
 # Wall shear-stress 
-    def van_driest(self,s12_mean, u_mean, y_mean, rho_mean, mu_mean, t_mean):
+    def van_driest(self, s12_mean, u_mean, y_mean, rho_mean, mu_mean, t_mean):
         # Three Point interpolation to calculate results at the wall
         rho_w = self.three_point_extrapolation(y_mean['mean_xy'], 
                                                rho_mean['mean_xy'], 
@@ -307,9 +321,9 @@ class Box():
         rho_plus = np.empty([self.nx, self.ny]) 
         for i in range(self.nx):
             y_plus[i,:]   = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
-            yi_plus[i,:]   = ui_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
+            yi_plus[i,:]  = ui_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
             u_plus[i,:]   = u_mean['mean_xy'][i,:] / u_tau[i] 
-            ui_plus[i,:]   = u_mean['mean_xy'][i,:] / ui_tau[i] 
+            ui_plus[i,:]  = u_mean['mean_xy'][i,:] / ui_tau[i] 
             T_plus[i,:]   = t_mean['mean_xy'][i,:] / T_w[i] 
             rho_plus[i,:] = rho_mean['mean_xy'][i,:] / rho_w[i]
         # Dictionary 
@@ -366,7 +380,7 @@ class Box():
                 loc_str = f'z = {z_val:.3} $[m]$'
         return loc_str 
 
-# Legendre interpolation 2nd order 
+# Legendre extrapolation 2nd order 
     def three_point_extrapolation(self, y_mean, f_mean, y_loc=0):
         # Legendre Constants 
         const_a  = ( (y_loc - y_mean[:,1]) * (y_loc - y_mean[:,2]) / ( 
