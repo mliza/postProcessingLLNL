@@ -39,12 +39,13 @@ T_init            = 216.66      #[K]
 RHO_init          = 0.18874     #[kg/m3] 
 P_init            = 11737       #[Pa] 
 X_init            = 11.5970E-2  #[m]
-x_                = int(nx/2) 
+x_                = int(0) 
 y_                = int(ny/2) 
 z_                = int(nz/2)
-xn                = 'x2'
+xn                = 'x1'
 yn                = 'y2'
 energy_name       = f'energy_spectrum_{xn}{yn}'
+vanDriest_name    = f'van_driest_{xn}' 
 procced_flag      = True 
 new_data_flag     = False   
 
@@ -109,7 +110,6 @@ for count, val in enumerate(time_steps):
                                      pickle_path=pickle_path)
         proc_3D  = helper.pickle_manager(pickle_name_file=f'{val}_processed',
                                          pickle_path=results_path)
-        IPython.embed(colors = 'Linux') 
         '''
         fluct_3D = helper.pickle_manager(pickle_name_file=f'{val}_fluct3D', 
                                      pickle_path=fluct_pickle_path)
@@ -173,26 +173,6 @@ for count, val in enumerate(time_steps):
         T_mean     = box.mean_fields(field_3D['T'])
         van_driest = box.van_driest(s12_mean, Ux_mean, Y_mean, 
                                     rho_mean, mu_mean, T_mean)  
-        # DELETE ME ## 
-        '''
-        y_p = van_driest['y_plus'][x_,:] 
-        u_p = van_driest['u_plus'][x_,:] 
-        ye_p = van_driest['yi_plus'][x_,:] 
-        ue_p = van_driest['ui_plus'][x_,:] 
-        plt.plot(y_p, u_p, '-', label='Extrapolated S_12')
-        plt.plot(ye_p, ue_p, '-', label='Extrapolated Finite Difference')
-        plt.title(x_str) 
-        plt.xscale('log')
-        plt.grid('-.')
-        plt.xlabel('$y^+$')
-        plt.ylabel('$u^+$')
-        plt.legend() 
-        plt.tight_layout()
-        plt.savefig(f'{results_path}/vanDriestTransformation.png', dpi=300)
-        '''
-        # DELETE ME ## 
-
-        # Calculate the energy cascade 
 
         # Add data to the dictionary 
         dict_out['velocityEdge']    = velocity_edge 
@@ -229,10 +209,14 @@ if procced_flag:
                           data_to_save=dict_out)
     # Plots 
     y_plus_str = f'$y^+$ = {van_driest_mean["y_plus"][y_]/10:.3}'
+    y_plus  = van_driest_mean['yi_plus']
+    u_plus  = van_driest_mean['ui_plus']
+
+    box.plot_van_driest(y_plus, u_plus, 
+                x_str, saving_path=results_path, fig_name=vanDriest_name) 
     box_plots.boundary_layers(velocity_thickness, temperature_thickness, 
                              mean_grid['mean_x'], saving_path=results_path) 
     box_plots.energy_cascade(energy_spectrum_mean[2:], xy_str, y_plus_str, 
                             shifting_factor=2E7,saving_path=results_path, 
                             fig_name=energy_name)
-                            #shifting_factor=2E23,saving_path=results_path)
 

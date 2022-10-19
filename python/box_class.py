@@ -220,41 +220,44 @@ class Box():
         return decomp_3D
 
 # Auto correlation 
-    def correlation_function(self, radius, fluct_field_1, fluct_field_2,  
-                                 autocorrelation_len=50):
-        fluctuation_len = len(fluct_field_1) - 1
-        numerator       = np.zeros(autocorrelation_len) 
-        denominator     = np.zeros(autocorrelation_len) 
-        radius          -= np.min(radius) 
-        autocorrelation_radius = np.linspace(0, np.max(radius), 
-                                             autocorrelation_len)
-        for i in range(fluctuation_len):
+    def correlation_function(self, radius, field_1, field_2, correlation_len=50):
+        field_len          = len(field_1) - 1
+        numerator          = np.zeros(correlation_len) 
+        denominator        = np.zeros(correlation_len) 
+        radius             -= np.min(radius) 
+        correlation_radius = np.linspace(0, np.max(radius), 
+                                             correlation_len)
+        for i in range(field_len):
             k = i
-            for j in range(autocorrelation_len):
-                numerator[j]   += (fluct_field_1[i] * fluct_field_2[k])
-                denominator[j] += fluct_field_1[i] * fluct_field_2[i] 
+            for j in range(correlation_len):
+                numerator[j]   += (field_1[i] * field_2[k])
+                denominator[j] += field_1[i] * field_2[i] 
                 k += 1
-                if (k > fluctuation_len):
+                if (k > field_len):
                     break 
-        autocorrelation = numerator / denominator 
-        # Calculate length scales 
-        delta_x    = np.mean(np.diff(autocorrelation_radius)) 
+        correlation_norm = numerator / denominator 
+        # Dictionary to return 
+        correlation_dict = { 'radius'          : correlation_radius,
+                             'norm_correlation': correlation_norm, 
+                             'correlation'     : numerator }
+        return correlation_dict
+
+# Lenght scales 
+    def microscales(self, correlation_radius, correlation):
+        delta_r    = np.mean(np.diff(correlation_radius)) 
+        # 2nd order finite forward difference  
         derivative = (2 * autocorrelation[0] - 5 * autocorrelation[1] + 
-                    4 * autocorrelation[2] - autocorrelation[3]) / delta_x**2 
+                    4 * autocorrelation[2] - autocorrelation[3]) / delta_r**2 
         if derivative > 0:
             derivative = (autocorrelation[0] - 2 * autocorrelation[1] +  
-                          autocorrelation[2]) / delta_x**2
+                          autocorrelation[2]) / delta_r**2
 
         taylor_scale   = 1 / np.sqrt(-0.5 * derivative)
-        integral_scale = np.abs(integrate.simpson(autocorrelation, dx=delta_x))
-
-        # Dictionary to return 
-        correlation_dict = { 'radius'          : autocorrelation_radius,
-                             'norm_correlation': autocorrelation, 
-                             'correlation'     : numerator,
-                             'taylor'          : taylor_scale, 
-                             'integral'        : integral_scale }
-        return correlation_dict
+        integral_scale = np.abs(integrate.simpson(autocorrelation, dx=delta_r))
+        # Dictionary to return
+        microscale_dict = { 'integral' : integral_scale,
+                            'taylor'   : taylor_scale}
+        return microscale_dict 
 
 # Energy Spectrum 
     def energy_spectrum(self, Ux, Uy, Uz, n_elements, n_bins=2):
@@ -410,23 +413,23 @@ class Box():
         return average_field 
 
 # Van Driest plot 
-    def plot_van_driest(self, van_driest_dict, x_, title_in, testing_path=None, 
-                        saving_path=None): 
-        y_p = van_driest_dict['y_plus'][x_,:] 
-        u_p = van_driest_dict['u_plus'][x_,:] 
-        plt.plot(y_p, u_p,
+    def plot_van_driest(self, y_plus, u_plus, title_in, testing_path=None, 
+                        saving_path=None, fig_name=None): 
+        plt.plot(y_plus, u_plus,
                  color='k', linestyle='-', linewidth=2, marker='o', markersize=5,
                  markerfacecolor='lightgrey', markeredgecolor='k', 
                  label='MARGOT, M10') 
-        u_form = 2.44 * np.log(y_p) + 5.2 
-        u_mine = 6.63 * np.log(y_p) - 6.28
-        u_mine = 2.44 * np.log(y_p) + 8.72
-        plt.plot(y_p, u_form, 's', markersize=2.5, 
+        u_form = 2.44 * np.log(y_plus) + 5.2 
+        u_mine = 2.44 * np.log(y_plus) + 8.72
+        '''
+        plt.plot(y_plus, u_form, 's', markersize=2.5, 
                  label='$2.44\,ln(y^+) + 5.2$') 
-        plt.plot(y_p[:6], y_p[:6],'o',  markersize=2.5, label='$y^+$')  
-        plt.plot(y_p[5:-40], u_mine[5:-40], '-.', markersize=2.5, color='darkred', 
+        plt.plot(y_plus[:6], y_plus[:6],'o',  markersize=2.5, label='$y^+$')  
+        plt.plot(y_plus[5:-40], u_mine[5:-40], '-.', markersize=2.5, color='darkred', 
                  #label='$6.63\,ln(y^+) - 6.28$') 
                  label='$2.44\,ln(y^+) + 8.72$') 
+        plt.legend() 
+        '''
         plt.title(title_in)
 
         if testing_path != None: 
@@ -446,9 +449,13 @@ class Box():
         # Saving 
         if saving_path == None:
             plt.show() 
+
         if saving_path != None:
             plt.tight_layout()
-            plt.savefig(f'{saving_path}/vanDriestTransformation.png', dpi=300)
+            if fig_name == None:
+                plt.savefig(f'{saving_path}/van_driest.png', dpi=300)
+            if fig_name != None:
+                plt.savefig(f'{saving_path}/{fig_name}.png', dpi=300)
             plt.close() 
 
 ## DELETE WHEN IT IS DONE ## 
