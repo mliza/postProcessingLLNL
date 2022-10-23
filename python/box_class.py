@@ -15,6 +15,7 @@
                                   properties and Van-Driest transform.
     Martin E. Liza   09/03/2022   Added energy spectrum, correlation
                                   and str_location functions. 
+    Martin E. Liza   10/22/2022   Added coarser_field function.
 '''
 import numpy as np 
 import pandas as pd 
@@ -333,7 +334,7 @@ class Box():
         van_driest_dict = { 'y_plus'      : y_plus, 
                             'yi_plus'     : yi_plus, 
                             'u_plus'      : u_plus, 
-                            'ui_plus'      : ui_plus, 
+                            'ui_plus'     : ui_plus, 
                             'T_plus'      : T_plus,
                             'rho_plus'    : rho_plus,
                             'rho_w'       : rho_w, 
@@ -411,6 +412,25 @@ class Box():
             average_field[i] = np.mean(field_matrix[sub_sample_time, i])
 
         return average_field 
+
+# Coarse mesh
+    def coarser_field(self, field_3D, f_width):
+        # Spacing vectors, with a filter width increment   
+        fx  = range(0, self.nx, f_width)
+        fy  = range(0, self.ny, f_width)
+        fz  = range(0, self.nz, f_width)
+        coarser_field = np.empty([len(fx), len(fy), len(fz)])
+        # fi, fj, fk increment on the spacing vector 
+        # i, j, k increments on the unfiltered field.
+        for i, fi in enumerate(fx):
+            for j, fj in enumerate(fy):
+                for k, fk in enumerate(fz):
+                    coarser_field[i,j,k] = np.mean(field_3d[fi:fi+f_width-1,
+                                                            fj:fj+f_width-1,
+                                                            fk:fk+f_width-1])
+        return coarser_field 
+        
+        
 
 # Van Driest plot 
     def plot_van_driest(self, y_plus, u_plus, title_in, testing_path=None, 
