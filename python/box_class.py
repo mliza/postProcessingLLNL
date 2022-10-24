@@ -74,47 +74,63 @@ class Box():
             array_3D[i,j,k] = array_1D[n]  
         return array_3D
 
+# Coarse mesh
+    def coarser_field(self, field_3D, f_width):
+        # Spacing vectors, with a filter width increment   
+        fx  = range(0, self.nx, f_width)
+        fy  = range(0, self.ny, f_width)
+        fz  = range(0, self.nz, f_width)
+        coarser_field = np.empty([len(fx)-1, len(fy)-1, len(fz)-1])
+        # fi, fj, fk increment on the spacing vector 
+        # i, j, k increments on the unfiltered field.
+        for i, fi in enumerate(fx[:-1]):
+            for j, fj in enumerate(fy[:-1]):
+                for k, fk in enumerate(fz[:-1]):
+                    coarser_field[i,j,k] = np.mean(field_3d[fi:fi+f_width,
+                                                            fj:fj+f_width,
+                                                            fk:fk+f_width])
+        return coarser_field 
+
 # Return a dictionary with gradient fields 
     def gradient_fields(self, array_dict3D):  
-        # U magnitude  
+        # GRADV_ij = du_j/dx_i = d_i u_j  (not jacobian) 
         u_mag      = np.sqrt(array_dict3D['Ux']**2 + 
                              array_dict3D['Ux']**2 + 
                              array_dict3D['Uz']**2) 
 
-        # GRADV_ij = du_j/dx_i = d_i u_j  (not jacobian) 
-        # Rotation_ij = 1/2 (grad_ij - grad_ji)
-        rotation_zy = 1/2 * (array_dict3D['GRADV_32'] - array_dict3D['GRADV_23'])  
-        rotation_xz = - 1/2 * (array_dict3D['GRADV_13'] - array_dict3D['GRADV_31']) 
-        rotation_xy = 1/2 * (array_dict3D['GRADV_12'] - array_dict3D['GRADV_21']) 
+        # Rotation_ij = 1/2 (grad_ji - grad_ij)
+        rotation_zy = 1/2 * (array_dict3D['GRADV_23'] - array_dict3D['GRADV_32']) 
+        rotation_xz = 1/2 * (array_dict3D['GRADV_31'] - array_dict3D['GRADV_13'])
+        rotation_yx = 1/2 * (array_dict3D['GRADV_12'] - array_dict3D['GRADV_21'])
 
-        # Strain_ij = 1/2 (grad_ij + grad_ji)
-        strain_xy = 1/2 * (array_dict3D['GRADV_12'] + array_dict3D['GRADV_21']) 
-        strain_xz = 1/2 * (array_dict3D['GRADV_13'] + array_dict3D['GRADV_31'])  
-        strain_zy = 1/2 * (array_dict3D['GRADV_32'] + array_dict3D['GRADV_23']) 
+        # Strain_ij = 1/2 (grad_ji + grad_ij)
+        strain_yx = 1/2 * (array_dict3D['GRADV_12'] + array_dict3D['GRADV_21']) 
+        strain_xz = 1/2 * (array_dict3D['GRADV_31'] + array_dict3D['GRADV_13'])  
+        strain_zy = 1/2 * (array_dict3D['GRADV_23'] + array_dict3D['GRADV_32']) 
 
         # Fibonacci Norm square ||A|| = sqrt(sum |a_ij|^2) 
         # Norms are fibonacy norm square  
         rotation_norm   = ( (2 * rotation_zy)**2 + 
                             (2 * rotation_xz)**2 + 
-                            (2 * rotation_xy)**2 )
-        shear_norm      = ( (2 * strain_xy)**2 + 
+                            (2 * rotation_yx)**2 )
+        shear_norm      = ( (2 * strain_yx)**2 + 
                             (2 * strain_xz)**2 + 
                             (2 * strain_zy)**2 )
         dilatation_norm = ( array_dict3D['GRADV_11']**2 + 
                             array_dict3D['GRADV_22']**2 + 
                             array_dict3D['GRADV_33']**2 ) 
 
-        # Return as if the gradient was a jacobian (this is why negative signs) 
         gradient_dict = { 'rotation_norm'   : rotation_norm, 
                           'shear_norm'      : shear_norm,
                           'dilatation_norm' : dilatation_norm,
-                          'ratation_zy'     : -rotation_zy,
-                          'ratation_xz'     : -rotation_xz,
-                          'ratation_xy'     : -rotation_xy,
-                          'shear_xy'        : strain_xy,
+                          'ratation_zy'     : rotation_zy,
+                          'ratation_xz'     : rotation_xz,
+                          'ratation_yx'     : rotation_yx,
+                          'shear_yx'        : strain_yx,
                           'shear_xz'        : strain_xz,
                           'shear_zy'        : strain_zy,
-                          'UMAG'            : u_mag }
+                          'UMAG'            : u_mag,
+                          'VORTMAG'         : np.sqrt(rotation_norm) }
 
         return gradient_dict 
 
@@ -243,7 +259,7 @@ class Box():
                              'correlation'     : numerator }
         return correlation_dict
 
-# Lenght scales 
+# Length scales 
     def microscales(self, correlation_radius, correlation):
         delta_r    = np.mean(np.diff(correlation_radius)) 
         # 2nd order finite forward difference  
@@ -413,22 +429,6 @@ class Box():
 
         return average_field 
 
-# Coarse mesh
-    def coarser_field(self, field_3D, f_width):
-        # Spacing vectors, with a filter width increment   
-        fx  = range(0, self.nx, f_width)
-        fy  = range(0, self.ny, f_width)
-        fz  = range(0, self.nz, f_width)
-        coarser_field = np.empty([len(fx), len(fy), len(fz)])
-        # fi, fj, fk increment on the spacing vector 
-        # i, j, k increments on the unfiltered field.
-        for i, fi in enumerate(fx):
-            for j, fj in enumerate(fy):
-                for k, fk in enumerate(fz):
-                    coarser_field[i,j,k] = np.mean(field_3d[fi:fi+f_width-1,
-                                                            fj:fj+f_width-1,
-                                                            fk:fk+f_width-1])
-        return coarser_field 
         
         
 

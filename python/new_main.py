@@ -48,6 +48,7 @@ energy_name       = f'energy_spectrum_{xn}{yn}'
 vanDriest_name    = f'van_driest_{xn}' 
 procced_flag      = True 
 new_data_flag     = False   
+delta_coarse      = 30 
 
 # x_ = [0.06, 0.105, 0.140] => [0, nx/2, 1290]
 # y_ = [0.001, 0.00269] => [3, ny/2] 
