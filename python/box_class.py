@@ -131,7 +131,6 @@ class Box():
                           'shear_zy'        : strain_zy,
                           'UMAG'            : u_mag,
                           'VORTMAG'         : np.sqrt(rotation_norm) }
-
         return gradient_dict 
 
 # Return fluctuation fields 
@@ -183,7 +182,6 @@ class Box():
         edge_dict['edge_thickness']      = edge_thickness 
         edge_dict['mean_edge_thickness'] = mean_edge_thickness
         edge_dict['mean_edge_field']     = mean_edge_field  
-
         return edge_dict 
 
 # Calculates fluctuation fields in a given 3D data set, 
@@ -317,40 +315,29 @@ class Box():
         T_w   = self.three_point_extrapolation(y_mean['mean_xy'], 
                                                t_mean['mean_xy'], 
                                                y_loc=0.0)
-        S12_w = self.three_point_extrapolation(y_mean['mean_xy'], 
-                                               s12_mean['mean_xy'], 
-                                               y_loc=0.0)
         u_1   = self.three_point_extrapolation(y_mean['mean_xy'], 
                                                u_mean['mean_xy'], 
                                                y_loc=-y_mean['mean_xy'][:,0])
         # Second order Central Difference 
-        S12_wi = (u_mean['mean_xy'][:,0] - u_1) / (2 * y_mean['mean_xy'][:,0]) 
+        S12_w = (u_mean['mean_xy'][:,0] - u_1) / (2 * y_mean['mean_xy'][:,0]) 
 
         # Calculate wall properties 
         nu_w  = mu_w / rho_w  
         tau_w = -mu_w * S12_w 
-        tau_wi = -mu_w * S12_wi 
         u_tau = np.sqrt(np.abs(tau_w / rho_w))  
-        ui_tau = np.sqrt(np.abs(tau_wi / rho_w))  
         # Calculate van driest transformations and returns at each x-position
         y_plus   = np.empty([self.nx, self.ny]) 
-        yi_plus   = np.empty([self.nx, self.ny]) 
         u_plus   = np.empty([self.nx, self.ny]) 
-        ui_plus   = np.empty([self.nx, self.ny]) 
         T_plus   = np.empty([self.nx, self.ny]) 
         rho_plus = np.empty([self.nx, self.ny]) 
         for i in range(self.nx):
             y_plus[i,:]   = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
-            yi_plus[i,:]  = ui_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
             u_plus[i,:]   = u_mean['mean_xy'][i,:] / u_tau[i] 
-            ui_plus[i,:]  = u_mean['mean_xy'][i,:] / ui_tau[i] 
             T_plus[i,:]   = t_mean['mean_xy'][i,:] / T_w[i] 
             rho_plus[i,:] = rho_mean['mean_xy'][i,:] / rho_w[i]
         # Dictionary 
         van_driest_dict = { 'y_plus'      : y_plus, 
-                            'yi_plus'     : yi_plus, 
                             'u_plus'      : u_plus, 
-                            'ui_plus'     : ui_plus, 
                             'T_plus'      : T_plus,
                             'rho_plus'    : rho_plus,
                             'rho_w'       : rho_w, 
@@ -358,7 +345,6 @@ class Box():
                             'nu_w'        : nu_w,
                             'tau_w'       : tau_w, 
                             'u_tau'       : u_tau }
-
         return van_driest_dict 
 
 # Fitting function
@@ -368,8 +354,7 @@ class Box():
         return data_smooth 
 
 # Plotting locations 
-    def str_locations(self, mean_loc_dict, x=None, y=None, 
-                      z=None):  
+    def str_locations(self, mean_loc_dict, x=None, y=None, z=None):  
         # Count how many None are as input 
         list  = [x, y, z]
         count_ = len([count for count in list if count is None])
@@ -426,12 +411,11 @@ class Box():
         sub_sample_time         = range(0, time_len, sub_sample_spacing) 
         for i in range(element_len):
             average_field[i] = np.mean(field_matrix[sub_sample_time, i])
-
         return average_field 
 
         
-        
 
+## DELETE WHEN IT IS DONE ## 
 # Van Driest plot 
     def plot_van_driest(self, y_plus, u_plus, title_in, testing_path=None, 
                         saving_path=None, fig_name=None): 
@@ -478,60 +462,6 @@ class Box():
                 plt.savefig(f'{saving_path}/{fig_name}.png', dpi=300)
             plt.close() 
 
-## DELETE WHEN IT IS DONE ## 
-# Plot boundary Layers 
-    def plot_boundary_layers(self, velocity_boundary_dict, 
-            temperature_boundary_dict, mean_velocity, mean_temperature, 
-            grid_mean_dict, velocity_freestream, temperature_freestream,
-            saving_path=None):
-        # Loading variables 
-        n_box           = 50  
-        temp_mean_thick = temperature_boundary_dict['mean_edge_thickness'] * 10**3
-        vel_mean_thick  = velocity_boundary_dict['mean_edge_thickness'] * 10**3
-        temp_mean_field = mean_temperature 
-        vel_mean_field  = mean_velocity  
-        x_mean          = grid_mean_dict['mean_x'] * 10**2
-        y_mean          = grid_mean_dict['mean_y'] * 10**3
-        v_color         = 'mediumturquoise' 
-        t_color         = 'darkorange'
-        temp_smooth     = self.smoothing_function(temp_mean_thick, n_box) 
-        vel_smooth      = self.smoothing_function(vel_mean_thick, n_box) 
-        n_box           /= 2
-        n_box           = int(n_box) 
-        # Plotting figures  
-        fig, (ax1, ax2) = plt.subplots(1,2, figsize=(8,5))
-        # Plot thickness 
-        ax1.plot(x_mean, vel_mean_thick, 'o', markersize=3,
-                markerfacecolor='lightgrey', markeredgecolor='k') 
-        ax1.plot(x_mean[n_box:-n_box], vel_smooth[n_box:-n_box], color=v_color, 
-                 linestyle='-', linewidth=1.5, label='Ux')
-        ax1.plot(x_mean, temp_mean_thick, 'o', markersize=3, 
-                markerfacecolor='lightgrey', markeredgecolor='k')
-        ax1.plot(x_mean[n_box:-n_box], temp_smooth[n_box:-n_box], color=t_color, 
-                 linestyle='-', linewidth=1.5, label='T') 
-        ax1.legend()
-        ax1.set_ylabel('y-axis [mm]')
-        ax1.set_xlabel('x-axis [cm]')
-        ax1.grid('-.') 
-        ax1.legend() 
-        # Plot value 
-        l1 = ax2.plot(vel_mean_field, y_mean, color=v_color, 
-                linestyle='-', linewidth=3, label=f'Ux={velocity_freestream:.2f}[m/s]')
-        ax2.set_xlabel('Ux [m/s]', color=v_color)
-        ax21 = ax2.twiny() 
-        l2 = ax21.plot(temp_mean_field, y_mean, color=t_color, 
-                linestyle='-', linewidth=3, label=f'T={temperature_freestream:.2f}[K]')
-        ax21.set_xlabel('T [K]', color=t_color)
-        ax2.set_ylabel('y-axis [mm]')
-        ax2.grid('-.') 
-        ax2.legend(handles=l1+l2, loc='upper center') 
-        
-        if saving_path == None:
-            plt.show() 
-        if saving_path != None:
-            fig.tight_layout()
-            fig.savefig(f'{saving_path}/boundary_layers.png', dpi=300)
-            plt.close() 
 
 # Making contour plots 
     def plot_contour(self, data_dict3D, grid_dict3D, grid_x, grid_y, 
