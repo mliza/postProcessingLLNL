@@ -25,12 +25,13 @@ import box_class as box
 import box_plots 
 
 # User Inputs 
-data_path         = '/p/lustre1/liza1/dns_margot'
-pickle_path       = os.path.join(data_path, 'pickle')
-temp_path         = os.path.join(data_path, 'temp_data')  
+data_path         = '/p/lustre1/liza1/dns_results'
+pickle_path       = os.path.join(data_path, 'box_pickle')
 fluct_pickle_path = os.path.join(data_path, 'fluct_pickle')
 rms_pickle_path   = os.path.join(data_path, 'rms_pickle')
-results_path      = '/p/lustre1/liza1/dns_results' 
+results_path      = os.path.join(data_path, 'results')  
+pickle_results    = os.path.join(data_path, 'sub_pickle')  
+coars_pickle_path = os.path.join(data_path, 'coarser_pickle') 
 nx                = 1439
 ny                = 89
 nz                = 638 
@@ -39,16 +40,15 @@ T_init            = 216.66      #[K]
 RHO_init          = 0.18874     #[kg/m3] 
 P_init            = 11737       #[Pa] 
 X_init            = 11.5970E-2  #[m]
-x_                = int(nx/2) 
+x_                = int(1290) 
 y_                = int(ny/2) 
 z_                = int(nz/2)
-xn                = 'x2'
+xn                = 'x3'
 yn                = 'y2'
-energy_name       = f'energy_spectrum_{xn}{yn}'
-vanDriest_name    = f'van_driest_{xn}' 
-procced_flag      = True 
-new_data_flag     = False   
-delta_coarse      = 30 
+time_avg_flag     = True 
+new_data_flag     = False 
+coarser_flag      = False #NEED TO BE MOVE 
+f_width           = 34   #NEED TO BE MOVE 
 
 # x_ = [0.06, 0.105, 0.140] => [0, nx/2, 1290]
 # y_ = [0.001, 0.00269] => [3, ny/2] 
@@ -97,24 +97,15 @@ y_str  = box.str_locations(mean_grid, x=None, y=y_, z=None)
 dict_out = { }
 for count, val in enumerate(time_steps):
     # Loading dict_3D, fluctuation_3D and rms_2D
-    if new_data_flag:
+    if time_avg_flag:
         field_3D = helper.pickle_manager(pickle_name_file=f'{val}_dict3D', 
                                      pickle_path=pickle_path)
-        '''
         rms_2D   = helper.pickle_manager(pickle_name_file=f'{val}_rms2D', 
                                      pickle_path=rms_pickle_path)
-        '''
-        fluct_3D = helper.pickle_manager(pickle_name_file=f'{val}_fluct3D', 
-                                     pickle_path=fluct_pickle_path)
-    if procced_flag:
-        field_3D = helper.pickle_manager(pickle_name_file=f'{val}_dict3D', 
-                                     pickle_path=pickle_path)
         proc_3D  = helper.pickle_manager(pickle_name_file=f'{val}_processed',
-                                         pickle_path=results_path)
-        '''
+                                     pickle_path=pickle_results)
         fluct_3D = helper.pickle_manager(pickle_name_file=f'{val}_fluct3D', 
                                      pickle_path=fluct_pickle_path)
-        '''
 
         # Calculate energy cascade and Van Driest 
         van_driest     = proc_3D['vanDriest'] 
@@ -130,6 +121,7 @@ for count, val in enumerate(time_steps):
             velocity_thickness_matrix    = np.empty([len(time_steps), nx]) 
             temperature_matrix           = np.empty([len(time_steps), nx]) 
             temperature_thickness_matrix = np.empty([len(time_steps), nx]) 
+            Mt_matrix                    = np.empty([len(time_steps), ny])  
             energy_spectrum_matrix       = np.empty([len(time_steps), 
                                                     np.shape(energy_cascade)[0]]) 
             # Van Driest values 
@@ -146,8 +138,10 @@ for count, val in enumerate(time_steps):
         energy_spectrum_matrix[count] = energy_cascade 
         velocity_matrix[count]        = proc_3D['velocityEdge']['mean_edge_field'] 
         temperature_matrix[count]     = proc_3D['temperatureEdge']['mean_edge_field'] 
+        Mt_matrix[count]              = rms_2D['Mt'][x_]
         velocity_thickness_matrix[count]    = proc_3D['velocityEdge']['mean_edge_thickness'] 
         temperature_thickness_matrix[count] = proc_3D['temperatureEdge']['mean_edge_thickness'] 
+
         # Iterates through Van Driest 
         for k in van_driest.keys():
             if k.split('_')[1] == 'w':
@@ -158,6 +152,8 @@ for count, val in enumerate(time_steps):
                 van_driest_matrix[k][count] = van_driest[k][x_,:] 
 
     if new_data_flag:
+        field_3D = helper.pickle_manager(pickle_name_file=f'{val}_dict3D', 
+                                         pickle_path=pickle_path)
         # Empty dictionary 
         dict_out = { }
         # Calculate edge values  
@@ -181,43 +177,68 @@ for count, val in enumerate(time_steps):
         dict_out['vanDriest']       = van_driest
 
         helper.pickle_manager(pickle_name_file=f'{val}_processed',
-                              pickle_path=results_path,
+                              pickle_path=pickle_results,
                               data_to_save=dict_out)
+    # Creating coarser field 
+    if coarser_flag:
+        field_3D = helper.pickle_manager(pickle_name_file=f'{val}_dict3D', 
+                                         pickle_path=pickle_path)
+        dict_out = { }
+        for key in field_3D:
+            dict_out[key] = box.coarser_field(field_3D[key], f_width=f_width)
 
-if procced_flag:
+    # Save in a pickle file 
+    helper.pickle_manager(pickle_name_file=f'{val}_coarse_box_{f_width}',
+                          pickle_path=coars_pickle_path,
+                          data_to_save=dict_out)
+
+if time_avg_flag:
     # Perform time average 
     velocity_mean         = box.time_average(velocity_matrix)
     velocity_thickness    = box.time_average(velocity_thickness_matrix)
     temperature_mean      = box.time_average(temperature_matrix)
     temperature_thickness = box.time_average(temperature_thickness_matrix)
     energy_spectrum_mean  = box.time_average(energy_spectrum_matrix)
+    Mt_mean               = box.time_average(Mt_matrix)
+    location              = [x_, y_, z_]
     van_driest_mean       = { }
+
     # Iterates through van driest dictionary  
     for k in van_driest.keys():
         van_driest_mean[k] = box.time_average(van_driest_matrix[k])
 
     # Return Dictionary 
-    dict_out =  { 'velocity_mean'          : velocity_mean, 
+    dict_out =  { 'location'               : location, 
+                  'velocity_mean'          : velocity_mean, 
                   'velocity_thickness'     : velocity_thickness, 
                   'temperature_mean'       : temperature_mean,
                   'temperature_thickness'  : temperature_thickness,
                   'energy_spectrum'        : energy_spectrum_mean,
                   'energy_spectrum_matrix' : energy_spectrum_matrix, 
-                  'van_driest'             : van_driest_mean}
+                  'van_driest'             : van_driest_mean,
+                  'Mt_matrix'              : Mt_matrix,
+                  'Mt_mean'                : Mt_mean } 
 
     helper.pickle_manager(pickle_name_file=f'time_average_{xn}{yn}',
-                          pickle_path=results_path,
+                          pickle_path=pickle_results,
                           data_to_save=dict_out)
     # Plots 
     y_plus_str = f'$y^+$ = {van_driest_mean["y_plus"][y_]/10:.3}'
-    y_plus  = van_driest_mean['yi_plus']
-    u_plus  = van_driest_mean['ui_plus']
+    y_plus   = van_driest_mean['y_plus']
+    u_plus   = van_driest_mean['u_plus']
+    rho_plus = van_driest_mean['rho_plus'] 
+    T_plus   = van_driest_mean['T_plus'] 
 
     box.plot_van_driest(y_plus, u_plus, 
-                x_str, saving_path=results_path, fig_name=vanDriest_name) 
+                x_str, saving_path=results_path, fig_name=f'van_driest_{xn}') 
+    box_plots.y_plus(y_plus, Mt_mean, 'M_t', xy_str, saving_path=results_path,
+                     fig_name=f'Mt_{xn}') 
+    box_plots.y_plus(y_plus, T_plus, 'T', xy_str, saving_path=results_path,
+                     fig_name=f'T_plus_{xn}') 
+    box_plots.y_plus(y_plus, rho_plus, '\\rho', xy_str, saving_path=results_path,
+                     fig_name=f'rho_plus_{xn}') 
     box_plots.boundary_layers(velocity_thickness, temperature_thickness, 
                              mean_grid['mean_x'], saving_path=results_path) 
     box_plots.energy_cascade(energy_spectrum_mean[2:], xy_str, y_plus_str, 
-                            shifting_factor=2E7,saving_path=results_path, 
-                            fig_name=energy_name)
-
+                        shifting_factor=2E7,saving_path=results_path, 
+                        fig_name=f'energy_spectrum_{xn}{yn}')

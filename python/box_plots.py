@@ -76,6 +76,26 @@ def correlation(correlation_dict, correlation_function, title_str,
         plt.savefig(f'{saving_path}/{saving_name}_correlation.png', dpi=300) 
         plt.close() 
 
+# Plot y_plus 
+def y_plus(y_plus, plus_field, plus_field_str, title, 
+          saving_path=None, fig_name=None):
+    plt.plot(y_plus, plus_field, 'o-', markerfacecolor='lightgray',
+                   linewidth='3', color='k')
+    plt.title(title)
+    plt.grid('-.')
+    plt.xscale('log')
+    plt.xlabel('$y^+$')
+    plt.ylabel(f'${plus_field_str}^+$')
+    if saving_path == None:
+        plt.show() 
+    if saving_path != None:
+        plt.tight_layout()
+        if fig_name == None: 
+            plt.savefig(os.path.join(saving_path, 'field_plus.png'), dpi=300) 
+        if fig_name != None:
+            plt.savefig(os.path.join(saving_path, f'{fig_name}.png'), dpi=300) 
+        plt.close() 
+
 # Plot Boundary Layers 
 def boundary_layers(mean_velocity_thickness, mean_temperature_thickness,
                     mean_x, saving_path=None):

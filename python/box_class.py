@@ -86,7 +86,7 @@ class Box():
         for i, fi in enumerate(fx[:-1]):
             for j, fj in enumerate(fy[:-1]):
                 for k, fk in enumerate(fz[:-1]):
-                    coarser_field[i,j,k] = np.mean(field_3d[fi:fi+f_width,
+                    coarser_field[i,j,k] = np.mean(field_3D[fi:fi+f_width,
                                                             fj:fj+f_width,
                                                             fk:fk+f_width])
         return coarser_field 
@@ -123,9 +123,9 @@ class Box():
         gradient_dict = { 'rotation_norm'   : rotation_norm, 
                           'shear_norm'      : shear_norm,
                           'dilatation_norm' : dilatation_norm,
-                          'ratation_zy'     : rotation_zy,
-                          'ratation_xz'     : rotation_xz,
-                          'ratation_yx'     : rotation_yx,
+                          'rotation_zy'     : rotation_zy,
+                          'rotation_xz'     : rotation_xz,
+                          'rotation_yx'     : rotation_yx,
                           'shear_yx'        : strain_yx,
                           'shear_xz'        : strain_xz,
                           'shear_zy'        : strain_zy,

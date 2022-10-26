@@ -12,9 +12,11 @@
 import IPython 
 import sys 
 import os 
+import numpy as np 
 scripts_path   = os.environ.get('SCRIPTS')
+dns_path       = os.path.normpath(os.getcwd() + os.sep + os.pardir) 
 python_scripts = os.path.join(scripts_path, 'Python')
-fortran_path   = os.path.abspath('../fortran_modules')
+fortran_path   = os.path.join(dns_path, 'fortran_modules')
 sys.path.append(python_scripts)
 sys.path.append(fortran_path)
 # Helper class 
@@ -29,19 +31,20 @@ import f_vectorReader
 
 # User Inputs 
 data_path         = '/p/lustre1/liza1/dns_margot'
-pickle_path       = os.path.join(data_path, 'pickle')
-temp_path         = os.path.join(data_path, 'temp_data')  
-fluct_pickle_path = os.path.join(data_path, 'fluct_pickle')
-rms_pickle_path   = os.path.join(data_path, 'rms_pickle')
+results_path      = '/p/lustre1/liza1/dns_results'
 box_path          = os.path.join(data_path, 'BOX')  
+pickle_path       = os.path.join(results_path, 'box_pickle')
+temp_path         = os.path.join(results_path, 'temp_data')  
+fluct_pickle_path = os.path.join(results_path, 'fluct_pickle')
+rms_pickle_path   = os.path.join(results_path, 'rms_pickle')
 nx                = 1439
 ny                = 89
 nz                = 638 
 mapping_flag      = False  
 grid_flag         = False
 time_flag         = False  
-a                 = 85
-b                 = 84
+a                 = int(sys.argv[1])
+b                 = int(sys.argv[2]) 
 
 # Loading my classes 
 helper = helper.Helper()
@@ -80,7 +83,11 @@ else:
                                        pickle_path=pickle_path)
 
 # For running multiple times 
-time_steps = time_steps[a:b]  # cutting processing time 
+if b == -1:
+    time_steps = time_steps[a:]
+else:
+    time_steps = time_steps[a:b]  # cutting processing time 
+
 
 # List scalar fields and create as a vector  
 scalar_fields = [ ]
