@@ -85,7 +85,7 @@ def y_plus(y_plus, plus_field, plus_field_str, title,
     plt.grid('-.')
     plt.xscale('log')
     plt.xlabel('$y^+$')
-    plt.ylabel(f'${plus_field_str}^+$')
+    plt.ylabel(f'${plus_field_str}$')
     if saving_path == None:
         plt.show() 
     if saving_path != None:

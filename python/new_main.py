@@ -40,13 +40,20 @@ T_init            = 216.66      #[K]
 RHO_init          = 0.18874     #[kg/m3] 
 P_init            = 11737       #[Pa] 
 X_init            = 11.5970E-2  #[m]
-x_                = int(1290) 
+'''
+x_                = int(0)  
 y_                = int(ny/2) 
 z_                = int(nz/2)
-xn                = 'x3'
+xn                = 'x1'
 yn                = 'y2'
-time_avg_flag     = True 
-new_data_flag     = False 
+'''
+x_                = int(sys.argv[1]) 
+y_                = int(sys.argv[2]) 
+z_                = int(nz/2)
+xn                = sys.argv[3]
+yn                = sys.argv[4]
+time_avg_flag     = True
+new_data_flag     = False
 coarser_flag      = False #NEED TO BE MOVE 
 f_width           = 34   #NEED TO BE MOVE 
 
@@ -63,22 +70,31 @@ sos_init     = aero.speed_of_sound(T_init)
 mu_init      = aero.sutherland_law(T_init) 
 mach_init    = U_init / sos_init 
 normal_dict  = aero.normal_shock_relations(mach_init) 
-oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=45)  
+oblique_dict = aero.oblique_shock_relations(mach_init, shock_angle_deg=26)  
 mu_init      = aero.sutherland_law(T_init)
 re_init      = U_init * RHO_init / mu_init
 
-# Downstream properties, assumes a shock at 45 
+# Downstream properties, assumes a shock at 30 
 T_2   = T_init * oblique_dict['T_ratio']      #[K]
+P_2   = P_init * oblique_dict['P_ratio']      #[Pa]
 sos_2 = aero.speed_of_sound(T_2)              #[m/s]
 U_2   = oblique_dict['mach_2'] * sos_2        #[m/s]
 Rho_2 = RHO_init * oblique_dict['Rho_ratio']  #[kg/m3] 
 M_2   = U_2 / sos_2                           #[ ]
+T_2 = 1510
+U_2 = 2531 
+
 
 # Print statments  
 print(f'{x_} = {xn}, {y_} = {yn}') 
+'''
 print(f'The unit Re is {re_init:.6E} [1/m]')
-print(f'The post shock temperature is {T_2:.3} [K]')  
 print(f'The post shock mach is {M_2:.2} [ ]')  
+print(f'The post shock pressure is {P_2:.2} [Pa]')  
+print(f'The post shock temperature is {T_2:.3} [K]')  
+print(f'The post shock density is {Rho_2:.3} [kg/m^3]')  
+'''
+
 
 # Loading time steps and grid_3D pickle files   
 time_steps = helper.pickle_manager(pickle_name_file='time_steps', 
@@ -114,15 +130,33 @@ for count, val in enumerate(time_steps):
                                              field_3D['Uz'][x_,y_,:],
                                              n_elements=nz, 
                                              n_bins=2)
+        # Dilatation, Shear and rotation
+        dilatation = box.mean_fields(field_3D['dilatation_norm'])['mean_xy']
+        rotation   = box.mean_fields(field_3D['rotation_norm'])['mean_xy']
+        shear      = box.mean_fields(field_3D['shear_norm'])['mean_xy']
+        DIL        = box.mean_fields(field_3D['DIL'])['mean_xy']
+        rho        = box.mean_fields(field_3D['RHO'])['mean_xy']
+        
+
         # Initialize at the first iteration
         if count == 0:
+            time_len                     = len(time_steps)
             van_driest_matrix            = { }
-            velocity_matrix              = np.empty([len(time_steps), nx]) 
-            velocity_thickness_matrix    = np.empty([len(time_steps), nx]) 
-            temperature_matrix           = np.empty([len(time_steps), nx]) 
-            temperature_thickness_matrix = np.empty([len(time_steps), nx]) 
-            Mt_matrix                    = np.empty([len(time_steps), ny])  
-            energy_spectrum_matrix       = np.empty([len(time_steps), 
+            Ux_rms_matrix                = np.empty([time_len, ny])
+            Uy_rms_matrix                = np.empty([time_len, ny])
+            Uz_rms_matrix                = np.empty([time_len, ny])
+            Mt_matrix                    = np.empty([time_len, ny])  
+            M_matrix                     = np.empty([time_len, ny])
+            dilatation_matrix            = np.empty([time_len, ny])
+            rotation_matrix              = np.empty([time_len, ny])
+            DIL_matrix                   = np.empty([time_len, ny])
+            shear_matrix                 = np.empty([time_len, ny])
+            velocity_matrix              = np.empty([time_len, nx]) 
+            velocity_thickness_matrix    = np.empty([time_len, nx]) 
+            temperature_matrix           = np.empty([time_len, nx]) 
+            rho_matrix                   = np.empty([time_len, nx]) 
+            temperature_thickness_matrix = np.empty([time_len, nx]) 
+            energy_spectrum_matrix       = np.empty([time_len, 
                                                     np.shape(energy_cascade)[0]]) 
             # Van Driest values 
             for k in van_driest.keys():
@@ -138,7 +172,16 @@ for count, val in enumerate(time_steps):
         energy_spectrum_matrix[count] = energy_cascade 
         velocity_matrix[count]        = proc_3D['velocityEdge']['mean_edge_field'] 
         temperature_matrix[count]     = proc_3D['temperatureEdge']['mean_edge_field'] 
+        rho_matrix[count]             = rho[x_]
         Mt_matrix[count]              = rms_2D['Mt'][x_]
+        M_matrix[count]               = rms_2D['M'][x_]
+        Ux_rms_matrix[count]          = rms_2D['Ux'][x_]
+        Uy_rms_matrix[count]          = rms_2D['Uy'][x_]
+        Uz_rms_matrix[count]          = rms_2D['Uz'][x_]
+        dilatation_matrix[count]      = dilatation[x_]
+        rotation_matrix[count]        = rotation[x_]
+        DIL_matrix[count]             = DIL[x_]
+        shear_matrix[count]           = shear[x_]
         velocity_thickness_matrix[count]    = proc_3D['velocityEdge']['mean_edge_thickness'] 
         temperature_thickness_matrix[count] = proc_3D['temperatureEdge']['mean_edge_thickness'] 
 
@@ -157,9 +200,18 @@ for count, val in enumerate(time_steps):
         # Empty dictionary 
         dict_out = { }
         # Calculate edge values  
+        # TESTING ML #
+        '''
         temperature_edge = box.edge_properties(field_3D['T'], grid_3D['Y'],
                                                freestream_value=T_2)
         velocity_edge    = box.edge_properties(field_3D['Ux'], grid_3D['Y'],
+                                               freestream_value=U_2)
+        '''
+        temperature_edge = box.edge_properties_mean(box.mean_fields(field_3D['T'])['mean_xy'], 
+                                               mean_grid['mean_y'],
+                                               freestream_value=T_2)
+        velocity_edge    = box.edge_properties_mean(box.mean_fields(field_3D['Ux'])['mean_xy'], 
+                                               mean_grid['mean_y'],
                                                freestream_value=U_2)
         # Calculate Van Driest transformation 
         s12_mean   = box.mean_fields(field_3D['GRADV_12'])
@@ -197,28 +249,50 @@ if time_avg_flag:
     velocity_mean         = box.time_average(velocity_matrix)
     velocity_thickness    = box.time_average(velocity_thickness_matrix)
     temperature_mean      = box.time_average(temperature_matrix)
+    rho_mean              = box.time_average(rho_matrix)
     temperature_thickness = box.time_average(temperature_thickness_matrix)
     energy_spectrum_mean  = box.time_average(energy_spectrum_matrix)
     Mt_mean               = box.time_average(Mt_matrix)
-    location              = [x_, y_, z_]
+    M_mean                = box.time_average(M_matrix)
+    Ux_rms_mean           = box.time_average(Ux_rms_matrix)
+    Uy_rms_mean           = box.time_average(Uy_rms_matrix)
+    Uz_rms_mean           = box.time_average(Uz_rms_matrix)
+    dilatation_mean       = box.time_average(dilatation_matrix)
+    rotation_mean         = box.time_average(rotation_matrix)
+    shear_mean            = box.time_average(shear_matrix)
+    DIL_mean              = box.time_average(DIL_matrix)
+                
     van_driest_mean       = { }
-
     # Iterates through van driest dictionary  
     for k in van_driest.keys():
         van_driest_mean[k] = box.time_average(van_driest_matrix[k])
+
+    # Location dictionary
+    location = { 'index' : [x_, y_, z_],
+                 'x_loc' : mean_grid['mean_x'][x_], 
+                 'y_loc' : mean_grid['mean_y'][y_], 
+                 'y_p'   : np.round(van_driest_mean['y_plus'][y_]/10,3), 
+                 'z_loc' : mean_grid['mean_z'][z_] } 
 
     # Return Dictionary 
     dict_out =  { 'location'               : location, 
                   'velocity_mean'          : velocity_mean, 
                   'velocity_thickness'     : velocity_thickness, 
                   'temperature_mean'       : temperature_mean,
+                  'rho_mean'               : rho_mean, 
                   'temperature_thickness'  : temperature_thickness,
                   'energy_spectrum'        : energy_spectrum_mean,
-                  'energy_spectrum_matrix' : energy_spectrum_matrix, 
                   'van_driest'             : van_driest_mean,
-                  'Mt_matrix'              : Mt_matrix,
-                  'Mt_mean'                : Mt_mean } 
-
+                  'Mt'                     : Mt_mean, 
+                  'M_rms'                  : M_mean,
+                  'Ux_rms'                 : Ux_rms_mean,
+                  'Uy_rms'                 : Uy_rms_mean,
+                  'Uz_rms'                 : Uz_rms_mean,
+                  'rotation_mean'          : rotation_mean,
+                  'dilatation_mean'        : dilatation_mean,
+                  'DIL'                    : DIL_Mean, 
+                  'shear_mean'             : shear_mean }
+                  
     helper.pickle_manager(pickle_name_file=f'time_average_{xn}{yn}',
                           pickle_path=pickle_results,
                           data_to_save=dict_out)
@@ -231,11 +305,11 @@ if time_avg_flag:
 
     box.plot_van_driest(y_plus, u_plus, 
                 x_str, saving_path=results_path, fig_name=f'van_driest_{xn}') 
-    box_plots.y_plus(y_plus, Mt_mean, 'M_t', xy_str, saving_path=results_path,
+    box_plots.y_plus(y_plus, Mt_mean, 'M_t', x_str, saving_path=results_path,
                      fig_name=f'Mt_{xn}') 
-    box_plots.y_plus(y_plus, T_plus, 'T', xy_str, saving_path=results_path,
+    box_plots.y_plus(y_plus, T_plus, 'T^+', xy_str, saving_path=results_path,
                      fig_name=f'T_plus_{xn}') 
-    box_plots.y_plus(y_plus, rho_plus, '\\rho', xy_str, saving_path=results_path,
+    box_plots.y_plus(y_plus, rho_plus, '\\rho^+', xy_str, saving_path=results_path,
                      fig_name=f'rho_plus_{xn}') 
     box_plots.boundary_layers(velocity_thickness, temperature_thickness, 
                              mean_grid['mean_x'], saving_path=results_path) 

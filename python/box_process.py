@@ -147,6 +147,7 @@ for i in time_steps:
     grad_3D        = box.gradient_fields(dict_3D) 
     dict_3D['MU']  = aero.sutherland_law(dict_3D['T'])
     grad_3D['SoS'] = aero.speed_of_sound(dict_3D['T'])
+    sos_mean       = box.mean_fields(grad_3D['SoS'])['mean_xy']
     grad_3D['M']   = grad_3D['UMAG'] / grad_3D['SoS']  
     dict_3D.update(grad_3D)
 
@@ -165,11 +166,14 @@ for i in time_steps:
         fluct_3D[k] = box.reynolds_decomposition(dict_3D[k])
 
         print(f'RMS data: {i}_{k}')
-        rms_2D[k] = box.mean_fields(fluct_3D[k]**2)['mean_xy'] 
+        rms_2D[k] = np.sqrt(box.mean_fields(fluct_3D[k]**2)['mean_xy']) 
 
     # Turbulent Kinetic energy and Mt  in rms_2D
     rms_2D['TKE'] = 0.5 * (rms_2D['Ux'] + rms_2D['Uy'] + rms_2D['Uz']) 
-    rms_2D['Mt']  = np.sqrt(2 * rms_2D['TKE']) / rms_2D['SoS']  
+    fluctuations  = (box.mean_fields(fluct_3D['Ux']**2)['mean_xy'] +
+                         box.mean_fields(fluct_3D['Uy']**2)['mean_xy'] +
+                          box.mean_fields(fluct_3D['Uz']**2)['mean_xy'] )
+    rms_2D['Mt']  = np.sqrt(fluctuations) / sos_mean  
 
     # Saving fluctuation dictionaries 
     helper.pickle_manager(pickle_name_file=f'{i}_fluct3D', 

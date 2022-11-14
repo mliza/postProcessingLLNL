@@ -95,7 +95,7 @@ class Box():
     def gradient_fields(self, array_dict3D):  
         # GRADV_ij = du_j/dx_i = d_i u_j  (not jacobian) 
         u_mag      = np.sqrt(array_dict3D['Ux']**2 + 
-                             array_dict3D['Ux']**2 + 
+                             array_dict3D['Uy']**2 + 
                              array_dict3D['Uz']**2) 
 
         # Rotation_ij = 1/2 (grad_ji - grad_ij)
@@ -119,6 +119,9 @@ class Box():
         dilatation_norm = ( array_dict3D['GRADV_11']**2 + 
                             array_dict3D['GRADV_22']**2 + 
                             array_dict3D['GRADV_33']**2 ) 
+        dilatation      = ( array_dict3D['GRADV_11'] + 
+                            array_dict3D['GRADV_22'] + 
+                            array_dict3D['GRADV_33'] ) 
 
         gradient_dict = { 'rotation_norm'   : rotation_norm, 
                           'shear_norm'      : shear_norm,
@@ -130,6 +133,7 @@ class Box():
                           'shear_xz'        : strain_xz,
                           'shear_zy'        : strain_zy,
                           'UMAG'            : u_mag,
+                          'DIL'             : dilatation, 
                           'VORTMAG'         : np.sqrt(rotation_norm) }
         return gradient_dict 
 
@@ -182,6 +186,21 @@ class Box():
         edge_dict['edge_thickness']      = edge_thickness 
         edge_dict['mean_edge_thickness'] = mean_edge_thickness
         edge_dict['mean_edge_field']     = mean_edge_field  
+        return edge_dict 
+
+# Edge properties  
+    def edge_properties_mean(self, array_field3D, array_height3D, freestream_value):
+        edge_dict      = { }
+        edge_field     = np.empty(self.nx) 
+        edge_thickness = np.empty(self.nx) 
+        cut_value      = 0.99 * freestream_value 
+        # Find positions at 0.99 freestream 
+        for i in range(self.nx):
+            indx                = np.abs(array_field3D[i,:] - cut_value).argmin() 
+            edge_field[i]       = array_field3D[i,indx] 
+            edge_thickness[i]   = array_height3D[indx] 
+        edge_dict['mean_edge_thickness'] = edge_thickness
+        edge_dict['mean_edge_field']     = edge_field  
         return edge_dict 
 
 # Calculates fluctuation fields in a given 3D data set, 
@@ -304,42 +323,38 @@ class Box():
         return spectrum 
 
 # Wall shear-stress 
-    def van_driest(self, s12_mean, u_mean, y_mean, rho_mean, mu_mean, t_mean):
+    def van_driest(self, s12_mean, ux_mean, y_mean, rho_mean, mu_mean, t_mean):
         # Three Point interpolation to calculate results at the wall
-        rho_w = self.three_point_extrapolation(y_mean['mean_xy'], 
-                                               rho_mean['mean_xy'], 
-                                               y_loc=0.0) 
-        mu_w  = self.three_point_extrapolation(y_mean['mean_xy'], 
-                                               mu_mean['mean_xy'], 
-                                               y_loc=0.0)
-        T_w   = self.three_point_extrapolation(y_mean['mean_xy'], 
-                                               t_mean['mean_xy'], 
-                                               y_loc=0.0)
-        u_1   = self.three_point_extrapolation(y_mean['mean_xy'], 
-                                               u_mean['mean_xy'], 
-                                               y_loc=-y_mean['mean_xy'][:,0])
+        rho_w = self.three_point_extrapolation(y_mean, rho_mean, y_loc=0.0) 
+        mu_w  = self.three_point_extrapolation(y_mean, mu_mean,  y_loc=0.0)
+        T_w   = self.three_point_extrapolation(y_mean, t_mean,   y_loc=0.0) 
+        u_1   = self.three_point_extrapolation(y_mean, ux_mean,  y_loc=-y_mean[:,0])
+
         # Second order Central Difference 
-        S12_w = (u_mean['mean_xy'][:,0] - u_1) / (2 * y_mean['mean_xy'][:,0]) 
+        S12_w = (ux_mean[:,0] - u_1) / (2 * y_mean[:,0]) 
 
         # Calculate wall properties 
         nu_w  = mu_w / rho_w  
         tau_w = -mu_w * S12_w 
         u_tau = np.sqrt(np.abs(tau_w / rho_w))  
+
         # Calculate van driest transformations and returns at each x-position
         y_plus   = np.empty([self.nx, self.ny]) 
         u_plus   = np.empty([self.nx, self.ny]) 
         T_plus   = np.empty([self.nx, self.ny]) 
         rho_plus = np.empty([self.nx, self.ny]) 
+
         for i in range(self.nx):
-            y_plus[i,:]   = u_tau[i] * y_mean['mean_xy'][i,:] / nu_w[i] 
-            u_plus[i,:]   = u_mean['mean_xy'][i,:] / u_tau[i] 
-            T_plus[i,:]   = t_mean['mean_xy'][i,:] / T_w[i] 
-            rho_plus[i,:] = rho_mean['mean_xy'][i,:] / rho_w[i]
+            y_plus[i,:]   = u_tau[i] * y_mean[i,:] / nu_w[i] 
+            u_plus[i,:]   = ux_mean[i,:]  / u_tau[i] 
+            T_plus[i,:]   = t_mean[i,:]   / T_w[i] 
+            rho_plus[i,:] = rho_mean[i,:] / rho_w[i]
         # Dictionary 
         van_driest_dict = { 'y_plus'      : y_plus, 
                             'u_plus'      : u_plus, 
                             'T_plus'      : T_plus,
                             'rho_plus'    : rho_plus,
+                            'T_w'         : T_w,
                             'rho_w'       : rho_w, 
                             'mu_w'        : mu_w, 
                             'nu_w'        : nu_w,
@@ -406,11 +421,12 @@ class Box():
 # Time average 
     def time_average(self, field_matrix, sub_sample_spacing=1):
         # field_matrix = [time, elements]
-        [time_len, element_len] = np.shape(field_matrix)
-        average_field           = np.empty(element_len)
+        [time_len, x_size, y_size] = np.shape(field_matrix)
+        average_field           = np.empty([x_size, y_size])
         sub_sample_time         = range(0, time_len, sub_sample_spacing) 
-        for i in range(element_len):
-            average_field[i] = np.mean(field_matrix[sub_sample_time, i])
+        for i in range(x_size):
+            for j in range(y_size):
+                average_field[i,j] = np.mean(field_matrix[sub_sample_time, i, j])
         return average_field 
 
         
