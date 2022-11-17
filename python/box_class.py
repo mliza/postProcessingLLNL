@@ -420,13 +420,28 @@ class Box():
 
 # Time average 
     def time_average(self, field_matrix, sub_sample_spacing=1):
-        # field_matrix = [time, elements]
-        [time_len, x_size, y_size] = np.shape(field_matrix)
-        average_field           = np.empty([x_size, y_size])
-        sub_sample_time         = range(0, time_len, sub_sample_spacing) 
-        for i in range(x_size):
-            for j in range(y_size):
-                average_field[i,j] = np.mean(field_matrix[sub_sample_time, i, j])
+        # Check dimenension of dataset 
+        dimension = len(np.shape(field_matrix))
+
+        # If dimenesion is [time, nx, ny]
+        if dimension == 3:
+            [time_len, x_size, y_size] = np.shape(field_matrix)
+            average_field              = np.empty([x_size, y_size])
+            sub_sample_time            = range(0, time_len, sub_sample_spacing) 
+            for i in range(x_size):
+                for j in range(y_size):
+                    average_field[i,j] = np.mean(field_matrix[sub_sample_time, i, j])
+
+        # If dimenesion is [time, nx, ny, nz]
+        if dimension == 4:
+            [time_len, x_size, y_size, z_size] = np.shape(field_matrix)
+            average_field                      = np.empty([x_size, y_size, z_size])
+            sub_sample_time                    = range(0, time_len, sub_sample_spacing) 
+            for i in range(x_size):
+                for j in range(y_size):
+                    for k in range(z_size):
+                        average_field[i,j,k] = np.mean(field_matrix[sub_sample_time,i,j,k])
+
         return average_field 
 
         
