@@ -113,6 +113,7 @@ class Box():
         rotation_norm   = ( (2 * rotation_zy)**2 + 
                             (2 * rotation_xz)**2 + 
                             (2 * rotation_yx)**2 )
+
         shear_norm      = ( (2 * strain_yx)**2 + 
                             (2 * strain_xz)**2 + 
                             (2 * strain_zy)**2 )
@@ -122,6 +123,7 @@ class Box():
         dilatation      = ( array_dict3D['GRADV_11'] + 
                             array_dict3D['GRADV_22'] + 
                             array_dict3D['GRADV_33'] ) 
+        Q               = 0.5 * (rotation_norm - shear_norm - dilatation_norm) 
 
         gradient_dict = { 'rotation_norm'   : rotation_norm, 
                           'shear_norm'      : shear_norm,
@@ -132,6 +134,7 @@ class Box():
                           'shear_yx'        : strain_yx,
                           'shear_xz'        : strain_xz,
                           'shear_zy'        : strain_zy,
+                          'Q'               : Q, 
                           'UMAG'            : u_mag,
                           'DIL'             : dilatation, 
                           'VORTMAG'         : np.sqrt(rotation_norm) }

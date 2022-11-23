@@ -172,7 +172,6 @@ for count, val in enumerate(time_steps):
         energy_spectrum_matrix[count] = energy_cascade 
         velocity_matrix[count]        = proc_3D['velocityEdge']['mean_edge_field'] 
         temperature_matrix[count]     = proc_3D['temperatureEdge']['mean_edge_field'] 
-        rho_matrix[count]             = rho[x_]
         Mt_matrix[count]              = rms_2D['Mt'][x_]
         M_matrix[count]               = rms_2D['M'][x_]
         Ux_rms_matrix[count]          = rms_2D['Ux'][x_]
@@ -180,8 +179,9 @@ for count, val in enumerate(time_steps):
         Uz_rms_matrix[count]          = rms_2D['Uz'][x_]
         dilatation_matrix[count]      = dilatation[x_]
         rotation_matrix[count]        = rotation[x_]
-        DIL_matrix[count]             = DIL[x_]
-        shear_matrix[count]           = shear[x_]
+        rho_matrix[count]             = rho[x_,:]
+        DIL_matrix[count]             = DIL[x_,:]
+        shear_matrix[count]           = shear[x_,:]
         velocity_thickness_matrix[count]    = proc_3D['velocityEdge']['mean_edge_thickness'] 
         temperature_thickness_matrix[count] = proc_3D['temperatureEdge']['mean_edge_thickness'] 
 
