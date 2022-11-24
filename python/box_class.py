@@ -324,7 +324,7 @@ class Box():
             if count != 0:
                 pwf[i] = sum_pwd / count 
         spectrum = np.append(0, pwf[:-1])
-        return spectrum 
+        return spectrum[1:]
 
 # Wall shear-stress 
     def van_driest(self, s12_mean, ux_mean, y_mean, rho_mean, mu_mean, t_mean):
