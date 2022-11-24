@@ -11,6 +11,7 @@
 import IPython 
 import sys 
 import os 
+import gc 
 import numpy as np 
 import matplotlib.pyplot as plt 
 scripts_path   = os.environ.get('SCRIPTS')
@@ -33,7 +34,6 @@ nz                = 638
 helper = helper.Helper()
 box    = box.Box(nx=nx, ny=ny, nz=nz)
 spatial_avg_flag  = False
-matrix_name_out   = 'temporal_matrix'
 assemble_name_out = 'temporal_average'
 
 # Loading time steps and grid_3D pickle files   
@@ -41,7 +41,7 @@ time_steps = helper.pickle_manager(pickle_name_file='time_steps',
                                    pickle_path=pickle_path)
 time_len   = len(time_steps) 
 
-mean_matrix = { }
+ensemble_avg = { }
 for count, val in enumerate(time_steps):
     print(count) 
     # Loading dict_3D, fluctuation_3D and rms_2D
@@ -49,37 +49,28 @@ for count, val in enumerate(time_steps):
                              pickle_path=pickle_path)
     # Spatial average
     if spatial_avg_flag:
-        mean_field_3D  = { }
+        spatial_field3D  = { }
         for k in field_3D.keys():
-            mean_field_3D[k] = box.mean_fields(field_3D[k])['mean_xy']
-            # Creates empty matrix at each time [time, nx, ny] 
+            # Creates zeros matrix at each time [nx, ny] 
             if count == 0:
-                mean_matrix[k] = np.empty([time_len, nx, ny])
-            # Populates spatial average matrix  
-            mean_matrix[k][count] = mean_field_3D[k]
+                ensemble_avg[k] = np.zeros([nx, ny])
+
+            # Calculates spatial average 
+            spatial_field3D[k] = box.mean_fields(field_3D[k])['mean_xy']
+            # Calculates ensemble average 
+            ensemble_avg[k] += spatial_field3D[k] / time_len
 
     # Doesn't do a spatial average 
     if not spatial_avg_flag:
         for k in field_3D.keys():
-            # Creates empty matrix at each time [time, nx, ny, nz] 
+            # Creates a matrix of zeros  
             if count == 0:
-                mean_matrix[k] = np.empty([time_len, nx, ny, nz])
-            # Populates spatial average matrix  
-            mean_matrix[k][count] = field_3D[k]
-        
-# Save spatial average data  
-'''
-helper.pickle_manager(pickle_name_file=f'{matrix_name_out}',
-                      pickle_path=pickle_results,
-                      data_to_save=mean_matrix)
-'''
-
-# Calculates esemble average  
-ensemble_avg = { }
-for k in field_3D.keys():
-    # Calcualtes time average 
-    ensemble_avg[k] = box.time_average(mean_matrix[k])  
-
+                ensemble_avg[k] = np.zeros([nx, ny, nz])
+            # Calculate time averages  
+            ensemble_avg[k] += field_3D[k] / time_len
+        # Cleaning memory 
+        del field_3D
+        gc.collect()
 
 # Save ensemble average
 helper.pickle_manager(pickle_name_file=f'{assemble_name_out}',

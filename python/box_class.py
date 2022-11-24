@@ -125,19 +125,20 @@ class Box():
                             array_dict3D['GRADV_33'] ) 
         Q               = 0.5 * (rotation_norm - shear_norm - dilatation_norm) 
 
-        gradient_dict = { 'rotation_norm'   : rotation_norm, 
-                          'shear_norm'      : shear_norm,
-                          'dilatation_norm' : dilatation_norm,
-                          'rotation_zy'     : rotation_zy,
-                          'rotation_xz'     : rotation_xz,
-                          'rotation_yx'     : rotation_yx,
-                          'shear_yx'        : strain_yx,
-                          'shear_xz'        : strain_xz,
-                          'shear_zy'        : strain_zy,
-                          'Q'               : Q, 
-                          'UMAG'            : u_mag,
-                          'DIL'             : dilatation, 
-                          'VORTMAG'         : np.sqrt(rotation_norm) }
+        gradient_dict = { 'rotation_rate_norm': rotation_norm, 
+                          'pure_shear_norm'   : shear_norm,
+                          'dilatation_norm'   : dilatation_norm,
+                          'shear_rate_norm'   : dilatation_norm + shear_norm, 
+                          'rotation_zy'       : rotation_zy,
+                          'rotation_xz'       : rotation_xz,
+                          'rotation_yx'       : rotation_yx,
+                          'shear_yx'          : strain_yx,
+                          'shear_xz'          : strain_xz,
+                          'shear_zy'          : strain_zy,
+                          'Q'                 : Q, 
+                          'UMAG'              : u_mag,
+                          'DIL'               : dilatation, 
+                          'VORTMAG'           : np.sqrt(rotation_norm) }
         return gradient_dict 
 
 # Return fluctuation fields 
